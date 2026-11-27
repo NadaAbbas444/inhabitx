@@ -1,0 +1,5 @@
+# The web page is plain HTML + JS (mqtt.js and Leaflet load from a CDN),
+# so there is nothing to build: Netlify serves the web/ folder as-is.
+[build]
+  publish = "web"
+  command = ""
