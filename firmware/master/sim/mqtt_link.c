@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <poll.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -215,8 +216,12 @@ static void event_cb(MQTTContext_t *ctx, MQTTPacketInfo_t *pkt, MQTTDeserialized
     }
 }
 
+static uint32_t s_up_since;
+
 static void drop(const char *why)
 {
+    if (s_up && now_ms() - s_up_since < 60000)
+        printf("mqtt: connection lost again after a short time. Is another master running with the same login?\n");
     if (s_up) printf("mqtt: connection lost (%s), retrying every %d s\n", why, RETRY_MS / 1000);
     s_up = false;
     tls_close();
@@ -258,6 +263,7 @@ static void try_connect(void)
         return;
     }
     s_up = true;
+    s_up_since = now_ms();
     printf("mqtt: connected to %s as %s, listening on %s\n", s_conf.host, s_conf.user, s_sub);
     if (s_on_up) s_on_up();
 }
@@ -271,6 +277,8 @@ void mqtt_link_start(const mqtt_link_conf_t *c, const char *client_id, const cha
     s_on_msg = on_msg;
     s_on_up = on_up;
     s_started = true;
+    /* a write to a connection the broker just closed must fail, not kill us */
+    signal(SIGPIPE, SIG_IGN);
 }
 
 bool mqtt_link_connected(void) { return s_up; }
