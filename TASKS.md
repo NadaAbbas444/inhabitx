@@ -88,7 +88,7 @@ flowchart LR
 | M7 | Master on an E84 | M | ⚪ | | M3, M1, P0 (live lab) |
 | W1 | Fake slaves script | W | 🔴 | | T0, P0 |
 | W2 | Web page reads broker | W | 🔴 | 🔶 demo mode | T0 (M4 for real data) |
-| W3 | Host online | W | 🔴 | | W2 |
+| W3 | Host online | W | 🔴 | ✅ | W2 |
 | W4 | Booking + found items from the web | W | 🔴 | 🔶 demo mode | W2, M6 |
 | I1 | End to end | all | 🔴 | | S4, W3, W4 |
 | I2 | Link test with people | all | 🟡 | | I1 |
@@ -101,7 +101,7 @@ flowchart LR
 - [x] **HiveMQ Cloud** broker (Starter trial, ends 12 Dec 2026) with the three logins from README §4: `devices`, `web`, `webhook`, each limited to its topics
 - [x] Connection tested: connect with `devices`, publish a test message, see it arrive
 - [ ] Reminder set to cancel the HiveMQ trial before 12 Dec 2026
-- [ ] Repo **public** and **GitHub Pages** on (Settings → Pages → Source: GitHub Actions)
+- [x] Repo **public** and **GitHub Pages** on (Settings → Pages → Source: GitHub Actions)
 - [ ] **ModusToolbox** installed on the laptop
 - [ ] **Live lab:** how do we get our code onto the board? Does it have internet (to reach HiveMQ)? Can we see and touch its screen? Does it have the radar? Is it ours all day or in time slots?
 - [ ] Decide the live board's role: slave (default) or master
