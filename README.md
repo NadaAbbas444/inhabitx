@@ -37,6 +37,16 @@ The board reaches the cloud over Wi-Fi, so it needs a network it can join on its
 
 Logic to aim for: `true` after ~3 s of presence, `false` after ~20 s without. Only true/false leaves the board, never raw data or audio. If your sensor code runs on the CM55 core, tell Nada.
 
+## Leaving the live lab
+
+The lab's PC and board are used by the next person after you. The code is public anyway; the **passwords** are what matter (`secrets.h`, and the built `.hex`/`.elf` contain them too).
+
+1. Copy your `node_sensor.c` (and anything else you changed) to your laptop first.
+2. Delete the whole project folder on the lab PC (including `secrets.h` and `build/`), and empty the trash.
+3. Program the board with an unchanged Infineon example, so your firmware (with the passwords) isn't left on it.
+4. Don't sign in to anything on the lab PC; if you did, sign out.
+5. If in doubt, tell Nada so she can change the broker password.
+
 ## If it doesn't work
 
 | Problem | Check |
