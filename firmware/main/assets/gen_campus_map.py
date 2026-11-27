@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate the Universität Klagenfurt campus map for the master screen.
+Generate the Universität Klagenfurt campus map for the main's screen.
 
 Reads OpenStreetMap data (an .osm XML export of the campus area) and writes
 ui/campus_map.c: a pre-drawn RGB565 background image plus the position of each

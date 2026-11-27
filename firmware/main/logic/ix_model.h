@@ -1,5 +1,5 @@
 /*
- * InhabitX master: room state, bookings, ghost release, lost & found.
+ * InhabitX main: room state, bookings, ghost release, lost & found.
  *
  * Plain C, no LVGL and no MQTT, so the same file builds for the E84 and for
  * the PC simulator. The UI only talks to the building through this header.
@@ -18,11 +18,11 @@
 extern "C" {
 #endif
 
-/* ---- tuning (README §5–§6) ------------------------------------------- */
+/* ---- tuning (README §4–§5) ------------------------------------------- */
 #ifndef IX_GHOST_RELEASE_S
 #define IX_GHOST_RELEASE_S      30      /* demo value; real: 10 * 60        */
 #endif
-#define IX_OFFLINE_AFTER_S      10      /* no slave message for this long   */
+#define IX_OFFLINE_AFTER_S      10      /* no node message for this long   */
 #define IX_MAX_BOOKINGS_PER_MAIL 2
 #define IX_MAX_BOOKING_S        (4 * 3600)
 #define IX_SLOT_S               (15 * 60)
@@ -41,8 +41,8 @@ typedef enum {
     IX_FREE,        /* nobody there, no booking running                     */
     IX_BOOKED,      /* booking running, people checked in, room empty now   */
     IX_GHOST,       /* booking running, nobody showed up, countdown runs    */
-    IX_OCCUPIED,    /* slave reports someone there                          */
-    IX_OFFLINE,     /* no message from the slave for IX_OFFLINE_AFTER_S     */
+    IX_OCCUPIED,    /* node reports someone there                          */
+    IX_OFFLINE,     /* no message from the node for IX_OFFLINE_AFTER_S     */
 } ix_state_t;
 
 typedef struct {
@@ -66,8 +66,8 @@ int  ix_room_find(const char *id);              /* -1 if unknown */
 void ix_room_status(int idx, time_t now, ix_status_t *out);
 const char *ix_state_name(ix_state_t s);        /* "free", "ghost", ... (T0 names) */
 
-/* from M1: one call per slave message */
-void ix_slave_update(const char *room_id, bool occupied, time_t now);
+/* from M1: one call per node message */
+void ix_node_update(const char *room_id, bool occupied, time_t now);
 
 /* call about once a second: checks in, releases ghosts, expires old items */
 void ix_tick(time_t now);
@@ -92,8 +92,8 @@ typedef struct {
     time_t   grace_from;    /* no-show countdown starts here: max(start, booked at) */
     uint8_t  people;
     bool     checked_in;
-    char     name[IX_NAME_LEN];     /* stays on the master, never published */
-    char     email[IX_EMAIL_LEN];   /* stays on the master, never published */
+    char     name[IX_NAME_LEN];     /* stays on the main, never published */
+    char     email[IX_EMAIL_LEN];   /* stays on the main, never published */
 } ix_booking_t;
 
 /* Why a room can't be booked for start..end (IX_BOOK_OK if it can).

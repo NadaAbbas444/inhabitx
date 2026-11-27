@@ -1,5 +1,5 @@
 /*
- * InhabitX master: the broker messages of README §4, in and out.
+ * InhabitX main: the broker messages of README §3, in and out.
  *
  * Plain C on top of ix_model.h. No MQTT library and no sockets: the platform
  * (PC simulator now, E84 later) owns the connection and only passes topics
@@ -44,14 +44,20 @@ void ix_msg_handle(const char *topic, size_t topic_len,
                    const char *payload, size_t payload_len,
                    time_t now, ix_msg_result_t *out);
 
-/* Building state / found items as published (README §4). Returns the length,
+/* Building state / found items as published (README §3). Returns the length,
  * or 0 if buf is too small. With stable = true the output leaves out "ts" and
  * gives a ghost room's release time instead of the seconds left, so two calls
  * compare equal as long as nothing changed. */
 size_t ix_msg_rooms(time_t now, bool stable, char *buf, size_t n);
 size_t ix_msg_lostfound(time_t now, bool stable, char *buf, size_t n);
 
-/* "phone", "keys", ... as in README §4; -1 if unknown. */
+/* The building state to leave behind when the main is gone: every room
+ * offline and "main":"offline". Registered as the MQTT last will on
+ * IX_TOPIC_ROOMS (retained), so the broker publishes it if the main drops
+ * off without saying goodbye. */
+size_t ix_msg_rooms_main_offline(char *buf, size_t n);
+
+/* "phone", "keys", ... as in README §3; -1 if unknown. */
 const char *ix_msg_cat_key(int cat);
 int         ix_msg_cat_from_key(const char *key);
 

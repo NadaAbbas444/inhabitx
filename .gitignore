@@ -13,4 +13,5 @@ mtb_shared/
 .DS_Store
 .vscode/
 # Secrets
-firmware/master/sim/broker.conf
+firmware/main/sim/broker.conf
+secrets.h

@@ -1,4 +1,4 @@
-/* InhabitX master logic. See ix_model.h. */
+/* InhabitX main logic. See ix_model.h. */
 #include "ix_model.h"
 
 #include <ctype.h>
@@ -8,7 +8,7 @@
 typedef struct {
     ix_room_info_t info;
     bool   occupied;
-    time_t last_msg;        /* 0 = never heard from the slave */
+    time_t last_msg;        /* 0 = never heard from the node */
 } room_t;
 
 static room_t       s_rooms[IX_MAX_ROOMS];
@@ -125,7 +125,7 @@ const char *ix_state_name(ix_state_t s)
     }
 }
 
-void ix_slave_update(const char *room_id, bool occupied, time_t now)
+void ix_node_update(const char *room_id, bool occupied, time_t now)
 {
     int i = ix_room_find(room_id);
     if (i < 0) return;

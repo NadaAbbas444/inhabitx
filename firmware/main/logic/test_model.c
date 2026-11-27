@@ -26,14 +26,14 @@ static void setup(time_t now)
     s_released = 0;
     ix_room_add("Z.1.09", 1, 8);
     ix_room_add("Z.1.10", 1, 6);
-    ix_slave_update("Z.1.09", false, now);
-    ix_slave_update("Z.1.10", false, now);
+    ix_node_update("Z.1.09", false, now);
+    ix_node_update("Z.1.10", false, now);
 }
 
 static void run(time_t from, time_t to, bool occ09)
 {
     for (time_t t = from; t <= to; t++) {
-        if (t % 2 == 0) { ix_slave_update("Z.1.09", occ09, t); ix_slave_update("Z.1.10", false, t); }
+        if (t % 2 == 0) { ix_node_update("Z.1.09", occ09, t); ix_node_update("Z.1.10", false, t); }
         ix_tick(t);
     }
 }

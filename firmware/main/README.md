@@ -1,6 +1,6 @@
-# Master (one per building)
+# Main (one per building)
 
-Runs on the **laptop** for now (see README §3, "What runs where right now"), on an E84 + screen later.
+Runs on the **laptop** for now (see README §2), on an E84 + screen later.
 
 - Subscribes to `inhabitx/<building>/#` and keeps the latest state of every room
 - Runs the logic: room state, bookings (name + email, max 2 per email), ghost release, lost & found
@@ -12,7 +12,7 @@ Runs on the **laptop** for now (see README §3, "What runs where right now"), on
 |---|---|---|
 | `logic/` | plain C, no LVGL, no MQTT | done, tests pass |
 | `ui/` | LVGL screen UI | done in the simulator |
-| `sim/` | runs the master on a Linux laptop | done, MQTT still to add (M1, M4, M6) |
+| `sim/` | runs the main on a Linux laptop, with MQTT | done (M1, M4, M6) |
 | `assets/` | generators for floor plan, campus map, fonts | done |
 
-How to build and run: [sim/README.md](sim/README.md). Messages, logic and booking rules: README §4–§6.
+How to build and run: [sim/README.md](sim/README.md). Messages, logic and booking rules: README §3–§5.

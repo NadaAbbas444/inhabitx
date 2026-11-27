@@ -1,48 +1,49 @@
-# Master screen UI: PC simulator
+# Main: PC simulator
 
-Runs the master's LVGL UI on a Linux laptop in a window the size of the board's screen, with the **same** `ui/` and `logic/` code that goes onto the E84. Only `main.c` (window, clock, fake slaves) and `mqtt_link.c` (broker connection) are PC-specific.
+Runs the main's LVGL UI on a Linux laptop in a window the size of the board's screen, with the **same** `ui/` and `logic/` code that goes onto the E84. Only `main.c` (window, clock, fake nodes) and `mqtt_link.c` (broker connection) are PC-specific.
 
 ## Build and run
 
 Needs `cmake`, `gcc`, `libx11-dev` and `libssl-dev`. LVGL 9.2.2 and coreMQTT 2.3.1 are downloaded by CMake on the first build.
 
 ```bash
-cmake -S firmware/master/sim -B firmware/master/sim/build
-cmake --build firmware/master/sim/build -j
-./firmware/master/sim/build/master_sim --at 10:05
+cmake -S firmware/main/sim -B firmware/main/sim/build
+cmake --build firmware/main/sim/build -j
+./firmware/main/sim/build/main_sim --at 10:05
 ```
 
 | Option | Effect |
 |---|---|
-| *(none)* | connect to the broker from `broker.conf`, no fake slaves, start with no bookings |
-| `--offline` | no broker: built-in fake slaves and demo bookings (also used when `broker.conf` has no password) |
-| `--fake` | broker **and** the built-in fake slaves, until real slaves or `tools/fake_slaves.py` run |
+| *(none)* | connect to the broker from `broker.conf`, no fake nodes, start with no bookings |
+| `--offline` | no broker: built-in fake nodes and demo bookings (also used when `broker.conf` has no password) |
+| `--fake` | broker **and** the built-in fake nodes, until real nodes or `tools/fake_nodes.py` run |
 | `--conf FILE` | broker settings from another file (or set `IX_BROKER_CONF`) |
 | `--at HH:MM` | pretend it's that time today. Bookings only work between 08:00 and 24:00 |
 
-A booking nobody shows up for is released after 30 s (demo). For a test with real people (I2) build with the real 10 min: `cmake -S firmware/master/sim -B firmware/master/sim/build -DGHOST_RELEASE_S=600`.
+A booking nobody shows up for is released after 30 s (demo). For a test with real people (I2) build with the real 10 min: `cmake -S firmware/main/sim -B firmware/main/sim/build -DGHOST_RELEASE_S=600`.
 
 ## Broker
 
-The master logs in as `devices` (README §4). The password stays on the laptop:
+The main logs in as `devices` (README §7). The password stays on the laptop:
 
 ```bash
-cp firmware/master/sim/broker.conf.example firmware/master/sim/broker.conf
+cp firmware/main/sim/broker.conf.example firmware/main/sim/broker.conf
 ```
 
 then put the password into `broker.conf`, which is in `.gitignore`. Instead of the file, `IX_MQTT_HOST`, `IX_MQTT_PORT`, `IX_MQTT_USER` and `IX_MQTT_PASSWORD` work too. The connection is MQTT 3.1.1 over TLS on port 8883; the broker's certificate is checked against the system's CA certificates.
 
-What the master does on the broker (topics and payloads in README §4):
+What the main does on the broker (topics and payloads in README §3):
 
 | Task | Topic | |
 |---|---|---|
-| M1 | subscribes to `inhabitx/Z/#` | each `inhabitx/Z/<floor>/<room>/state` → `ix_slave_update()`. Unknown rooms are ignored. No message for 10 s → offline |
+| M1 | subscribes to `inhabitx/Z/#` | each `inhabitx/Z/<floor>/<room>/state` → `ix_node_update()`. Unknown rooms are ignored. No message for 10 s → offline |
 | M4 | publishes `inhabitx/Z/rooms`, `inhabitx/Z/lostfound` (retained, QoS 1) | when the content changes, checked twice a second; again after every reconnect. No names or emails |
+| | last will on `inhabitx/Z/rooms` (retained) | if the main drops off without disconnecting (laptop off, crash, Wi-Fi gone), the broker publishes every room `offline` with `"main":"offline"`; the page shows "Building offline" |
 | M6 | `inhabitx/Z/bookings/new`, `inhabitx/Z/lostfound/new` → `inhabitx/Z/replies/<req>` (not retained) | through `ix_book()` / `ix_found_add()`. `error` is one of the README §4 codes; found items can also get `room` or `cat`. A request delivered twice gets the same reply. Names and emails are never logged or published |
 
-The terminal prints one line per change (`slave Z.1.09: occupied`, `web booking Z.1.10 14:00-15:00, 4 people: ok`), never names or emails. `s` also shows whether the broker is connected. If the connection drops, the simulator retries every 5 s and keeps running on what it knows.
+The terminal prints one line per change (`node Z.1.09: occupied`, `web booking Z.1.10 14:00-15:00, 4 people: ok`), never names or emails. `s` also shows whether the broker is connected. If the connection drops, the simulator retries every 5 s and keeps running on what it knows.
 
-Only one master per building: a second simulator with the same broker login and client id takes over the connection from the first.
+Only one main per building: a second simulator with the same broker login and client id takes over the connection from the first.
 
 ### Why coreMQTT
 
@@ -58,7 +59,7 @@ Only one master per building: a second simulator with the same broker login and 
 
 All three connect to the E84 Evaluation Kit over MIPI-DSI and are supported by Infineon's LVGL code example.
 
-## Fake slaves
+## Fake nodes
 
 Type commands in the terminal where the simulator runs (`h` for help):
 
@@ -67,7 +68,7 @@ With `--offline` or `--fake`:
 | Command | Effect |
 |---|---|
 | `o 09` | toggle someone there / empty in Z.1.09 |
-| `x 12` | toggle the Z.1.12 slave online / offline (offline after 10 s) |
+| `x 12` | toggle the Z.1.12 node online / offline (offline after 10 s) |
 | `g 10` | new booking on Z.1.10 starting now with nobody there (ghost demo) |
 | `s` | print all room states |
 | `t X Y` / `k text` | tap the screen / type into the focused field (for scripted tests) |
@@ -75,10 +76,10 @@ With `--offline` or `--fake`:
 ## Files
 
 ```text
-firmware/master/
+firmware/main/
 ├── logic/            plain C, no LVGL, no MQTT library: rooms, bookings, ghost release, lost & found
 │   ├── ix_model.h/.c
-│   ├── ix_msg.h/.c   broker messages in and out (README §4), JSON by hand
+│   ├── ix_msg.h/.c   broker messages in and out (README §3), JSON by hand
 │   ├── test_model.c  cc -I. test_model.c ix_model.c -o t && ./t
 │   └── test_msg.c    cc -I. test_msg.c ix_msg.c ix_model.c -o t && ./t
 ├── ui/               LVGL 9 UI, portable
@@ -92,7 +93,7 @@ firmware/master/
 │   └── ui_fonts*.c   Roboto (Apache 2.0) for TinyTTF (assets/gen_fonts.py)
 ├── assets/           generators for the map and fonts
 └── sim/              this simulator
-    ├── main.c            window, clock, fake slaves, glue to the broker
+    ├── main.c            window, clock, fake nodes, glue to the broker
     ├── mqtt_link.h/.c    coreMQTT over OpenSSL: connect, reconnect, publish
     └── broker.conf.example   copy to broker.conf (not committed) and add the password
 ```

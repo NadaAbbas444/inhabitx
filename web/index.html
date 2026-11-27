@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-  /* Same tokens as the master screen (firmware/master/ui/ui_internal.h) */
+  /* Same tokens as the main's screen (firmware/main/ui/ui_internal.h) */
   :root {
     --bg: #0A0F1C; --bg2: #0F1933; --side: #0D1426; --card: #121A2C; --card2: #19233A; --card3: #22304E;
     --line: #1E2942; --text: #F1F5FB; --muted: #8B97AE; --faint: #56627C;
@@ -386,7 +386,7 @@ const CONFIG = {
   brokerUrl: 'wss://inhabitx-46341c9d.a03.euc1.aws.hivemq.cloud:8884/mqtt',
   readUser: 'web',  readPass: 'inhabix0',
   sendUser: 'webhook', sendPass: 'inhabix0',
-  ghostMinutes: 10,         // must match IX_GHOST_RELEASE_S on the master
+  ghostMinutes: 10,         // must match IX_GHOST_RELEASE_S on the main
 };
 
 const ROOM_INFO = {   // used when the building state doesn't carry seats/floor
@@ -418,6 +418,7 @@ const reqId = () => Math.random().toString(36).slice(2, 10);
 
 /* ---- state ----------------------------------------------------------------- */
 let building = null, receivedAt = 0, lostfound = { items: [] }, connState = 'connecting';
+const mainOff = () => building?.main === 'offline';   // the main dropped off (its MQTT last will)
 let page = 'overview', people = 1;
 const bk = { mode: 'any', room: null, people: 1, from: 0, to: 0, step: 'pick' };
 const lf = { mode: null, room: null, cat: null };
@@ -445,10 +446,12 @@ function tickClock() {
 }
 
 function renderConn() {
-  const m = { live: ['Live', '--free'], connecting: ['Connecting', '--ghost'], offline: ['Offline', '--busy'], demo: ['Demo', '--accent2'] }[connState];
+  const state = connState === 'live' && mainOff() ? 'building' : connState;
+  const m = { live: ['Live', '--free'], building: ['Building offline', '--busy'], connecting: ['Connecting', '--ghost'],
+              offline: ['Offline', '--busy'], demo: ['Demo', '--accent2'] }[state];
   $('conn').textContent = m[0];
   $('conn').style.setProperty('--c', `var(${m[1]})`);
-  $('conn').classList.toggle('pulse', connState === 'live' || connState === 'demo');
+  $('conn').classList.toggle('pulse', state === 'live' || state === 'demo');
 }
 
 /* ---- overview -------------------------------------------------------------- */
@@ -476,7 +479,8 @@ function renderOverview() {
   }
   $('free-n').textContent = free;
   $('free-text').textContent = free === 1 ? 'room free' : 'rooms free';
-  $('free-sub').textContent = people > 1 ? `for ${people} people · floor 1` : 'floor 1 · Zentralgebäude';
+  $('free-sub').textContent = mainOff() ? 'The building is offline right now. Please check the screen at the entrance.'
+    : people > 1 ? `for ${people} people · floor 1` : 'floor 1 · Zentralgebäude';
   $('s-busy').textContent = busy + ' in use';
   $('s-ghost').textContent = ghost + ' may free up';
   $('s-off').textContent = off + ' offline';
@@ -590,7 +594,7 @@ function clampTimes() {
   bk.from = Math.min(Math.max(bk.from, firstSlot()), CLOSE - SLOT);
   bk.to = Math.min(bk.from + Math.max(SLOT, dur), bk.from + MAXLEN, CLOSE);
 }
-/* same rules as ix_room_check() on the master; the master has the final word */
+/* same rules as ix_room_check() on the main; the main has the final word */
 function check(r) {
   const i = info(r);
   if (i.seats < bk.people) return ['Only ' + i.seats + ' seats', false];
@@ -752,7 +756,7 @@ function renderAll() {
   if (page === 'book' && bk.step === 'pick') renderBook();
   if (page === 'lf' && !lf.mode) renderLf();
 }
-function onBuilding(msg) { building = msg; receivedAt = Date.now(); renderAll(); }
+function onBuilding(msg) { building = msg; receivedAt = Date.now(); renderConn(); renderAll(); }
 setInterval(renderAll, 1000);
 addEventListener('resize', () => page === 'overview' && renderOverview());
 
@@ -787,7 +791,7 @@ function connectLive() {
   }) };
 }
 
-/* ---- demo: a building that behaves like the master's simulator ----------- */
+/* ---- demo: a building that behaves like the main's simulator ----------- */
 function demoSender() {
   return { send: (what, m) => new Promise(res => setTimeout(() => {
     if (what === 'lostfound/new') {
@@ -822,7 +826,7 @@ function startDemo() {
   const t = Math.floor(Date.now() / 1000);
   lostfound = { items: [{ room: 'Z.1.10', cat: 'umbrella', ts: t - 3600 }, { room: 'Z.1.08', cat: 'phone', ts: t - 2 * 86400 }] };
   pushDemo();
-  setInterval(() => {   // countdowns run out like on the master
+  setInterval(() => {   // countdowns run out like on the main
     for (const r of demoRooms) if (r.state === 'ghost') {
       r.release_in_s -= 5;
       if (r.release_in_s <= 0) { r.state = 'free'; delete r.release_in_s; r.slots = []; }

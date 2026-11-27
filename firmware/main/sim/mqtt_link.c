@@ -180,7 +180,8 @@ static bool tls_connect(const mqtt_link_conf_t *c, char *why, size_t n)
 /* ---- MQTT ---------------------------------------------------------------- */
 
 static mqtt_link_conf_t   s_conf;
-static char               s_client_id[64], s_sub[128];
+static char               s_client_id[64], s_sub[128], s_will_topic[128];
+static char               s_will_payload[4096];
 static mqtt_link_msg_cb_t s_on_msg;
 static mqtt_link_up_cb_t  s_on_up;
 static MQTTContext_t      s_mqtt;
@@ -221,7 +222,7 @@ static uint32_t s_up_since;
 static void drop(const char *why)
 {
     if (s_up && now_ms() - s_up_since < 60000)
-        printf("mqtt: connection lost again after a short time. Is another master running with the same login?\n");
+        printf("mqtt: connection lost again after a short time. Is another main running with the same login?\n");
     if (s_up) printf("mqtt: connection lost (%s), retrying every %d s\n", why, RETRY_MS / 1000);
     s_up = false;
     tls_close();
@@ -248,8 +249,13 @@ static void try_connect(void)
         .pUserName = s_conf.user, .userNameLength = (uint16_t)strlen(s_conf.user),
         .pPassword = s_conf.password, .passwordLength = (uint16_t)strlen(s_conf.password),
     };
+    MQTTPublishInfo_t will = {
+        .qos = MQTTQoS1, .retain = true,
+        .pTopicName = s_will_topic, .topicNameLength = (uint16_t)strlen(s_will_topic),
+        .pPayload = s_will_payload, .payloadLength = strlen(s_will_payload),
+    };
     bool session;
-    MQTTStatus_t st = MQTT_Connect(&s_mqtt, &ci, NULL, CONNECT_TIMEOUT_MS, &session);
+    MQTTStatus_t st = MQTT_Connect(&s_mqtt, &ci, s_will_topic[0] ? &will : NULL, CONNECT_TIMEOUT_MS, &session);
     if (st != MQTTSuccess) {
         printf("mqtt: broker said no: %s%s\n", MQTT_Status_strerror(st),
                st == MQTTServerRefused ? " (wrong user or password?)" : "");
@@ -269,8 +275,11 @@ static void try_connect(void)
 }
 
 void mqtt_link_start(const mqtt_link_conf_t *c, const char *client_id, const char *sub_filter,
+                     const char *will_topic, const char *will_payload,
                      mqtt_link_msg_cb_t on_msg, mqtt_link_up_cb_t on_up)
 {
+    snprintf(s_will_topic, sizeof s_will_topic, "%s", will_topic && will_payload ? will_topic : "");
+    snprintf(s_will_payload, sizeof s_will_payload, "%s", will_payload ? will_payload : "");
     s_conf = *c;
     snprintf(s_client_id, sizeof s_client_id, "%s", client_id);
     snprintf(s_sub, sizeof s_sub, "%s", sub_filter);

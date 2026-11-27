@@ -30,7 +30,10 @@ typedef void (*mqtt_link_msg_cb_t)(const char *topic, size_t topic_len,
                                    const char *payload, size_t payload_len);
 typedef void (*mqtt_link_up_cb_t)(void);    /* after each (re)connect + subscribe */
 
+/* will_topic/will_payload (may be NULL): published retained by the broker
+ * if this client drops off without disconnecting. */
 void mqtt_link_start(const mqtt_link_conf_t *c, const char *client_id, const char *sub_filter,
+                     const char *will_topic, const char *will_payload,
                      mqtt_link_msg_cb_t on_msg, mqtt_link_up_cb_t on_up);
 void mqtt_link_poll(void);
 bool mqtt_link_connected(void);

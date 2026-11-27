@@ -1,5 +1,5 @@
 /*
- * InhabitX master screen UI (LVGL 9, 800x480 touch).
+ * InhabitX main: screen UI (LVGL 9, 800x480 touch).
  *
  * Portable: the same files build in the PC simulator and on the E84.
  * The platform provides ix_now() and calls ui_init() once after LVGL and the

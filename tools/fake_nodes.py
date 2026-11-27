@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Fake slaves: publish room states to the broker like real slaves (README §4).
+"""Fake nodes: publish room states to the broker like real nodes (README §3).
 
-For rooms without hardware, so the master and the web page show a full floor.
+For rooms without hardware, so the main and the web page show a full floor.
 Each room sends {"room": ..., "occupied": ..., "ts": ...} every 2 s on
 inhabitx/<building>/<floor>/<room>/state. A room that stops sending turns
-offline on the master after 10 s.
+offline on the main after 10 s.
 
-    python3 tools/fake_slaves.py                           # Z.1.08, Z.1.10, Z.1.11, Z.1.12
-    python3 tools/fake_slaves.py --room Z.1.09 --occupied false
-    python3 tools/fake_slaves.py --shuffle 3               # a random room changes every ~3 min
+    python3 tools/fake_nodes.py                           # Z.1.08, Z.1.10, Z.1.11, Z.1.12
+    python3 tools/fake_nodes.py --room Z.1.09 --occupied false
+    python3 tools/fake_nodes.py --shuffle 3               # a random room changes every ~3 min
 
 While it runs, type commands (room = full id or suffix, e.g. 10):
     o <room>   toggle someone there / empty
-    x <room>   stop / start sending (room goes offline on the master)
+    x <room>   stop / start sending (room goes offline on the main)
     s          show the rooms
     q          quit
 
-Login: the `devices` user from firmware/master/sim/broker.conf (same file as
-the master simulator), or IX_MQTT_HOST / _PORT / _USER / _PASSWORD.
+Login: the `devices` user from firmware/main/sim/broker.conf (same file as
+the main simulator), or IX_MQTT_HOST / _PORT / _USER / _PASSWORD.
 Needs paho-mqtt: pip install -r tools/requirements.txt
 """
 import argparse
@@ -35,7 +35,7 @@ except ImportError:
     sys.exit("paho-mqtt is missing: pip install -r tools/requirements.txt")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_CONF = os.path.join(HERE, "..", "firmware", "master", "sim", "broker.conf")
+DEFAULT_CONF = os.path.join(HERE, "..", "firmware", "main", "sim", "broker.conf")
 
 # rooms without hardware and how they start (Z.1.09 is the live board's room)
 DEFAULT_ROOMS = {"Z.1.08": True, "Z.1.10": False, "Z.1.11": True, "Z.1.12": False}
@@ -58,7 +58,7 @@ def load_conf(path):
     missing = [k for k in ("host", "user", "password") if not conf.get(k)]
     if missing:
         sys.exit(f"no {', '.join(missing)} in {path} or IX_MQTT_* variables "
-                 "(copy firmware/master/sim/broker.conf.example to broker.conf)")
+                 "(copy firmware/main/sim/broker.conf.example to broker.conf)")
     return conf
 
 
@@ -79,7 +79,7 @@ def parse_bool(s):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Publish fake slave messages to the broker.")
+    ap = argparse.ArgumentParser(description="Publish fake node messages to the broker.")
     ap.add_argument("--room", action="append", help="room to fake (repeat for more); default: Z.1.08, Z.1.10, Z.1.11, Z.1.12")
     ap.add_argument("--occupied", type=parse_bool, help="start state for the --room rooms (default false)")
     ap.add_argument("--building", default="Z")
@@ -101,7 +101,7 @@ def main():
     lock = threading.Lock()
 
     conf = load_conf(args.conf)
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"inhabitx-fake-slaves-{os.getpid()}")
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"inhabitx-fake-nodes-{os.getpid()}")
     client.username_pw_set(conf["user"], conf["password"])
     client.tls_set(ca_certs=conf.get("cafile"))
     connected = threading.Event()
@@ -190,7 +190,7 @@ def main():
                         print(f"  {r} {'occupied' if rooms[r] else 'empty'}")
                     else:
                         sending[r] = not sending[r]
-                        print(f"  {r} {'sending' if sending[r] else 'stopped (offline on the master in 10 s)'}")
+                        print(f"  {r} {'sending' if sending[r] else 'stopped (offline on the main in 10 s)'}")
                 next_send = 0.0
                 continue
             if cmd:

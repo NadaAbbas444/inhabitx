@@ -1,4 +1,4 @@
-/* InhabitX master: broker messages. See ix_msg.h and README §4. */
+/* InhabitX main: broker messages. See ix_msg.h and README §4. */
 #include "ix_msg.h"
 #include "ix_model.h"
 
@@ -266,6 +266,20 @@ size_t ix_msg_rooms(time_t now, bool stable, char *buf, size_t n)
     return done(&o);
 }
 
+size_t ix_msg_rooms_main_offline(char *buf, size_t n)
+{
+    out_t o = { buf, n, 0, false };
+    w(&o, "{\"ts\":0,\"main\":\"offline\",\"rooms\":[");
+    for (int i = 0; i < ix_room_count(); i++) {
+        const ix_room_info_t *ri = ix_room(i);
+        w(&o, "%s{\"id\":", i ? "," : "");
+        w_str(&o, ri->id);
+        w(&o, ",\"state\":\"offline\",\"seats\":%u,\"floor\":%u}", (unsigned)ri->seats, (unsigned)ri->floor);
+    }
+    w(&o, "]}");
+    return done(&o);
+}
+
 size_t ix_msg_lostfound(time_t now, bool stable, char *buf, size_t n)
 {
     out_t o = { buf, n, 0, false };
@@ -367,7 +381,7 @@ static void reply(ix_msg_result_t *out, const char *req, const char *err)
     s_cache_next = (s_cache_next + 1) % REPLY_CACHE;
 }
 
-static void on_slave(const char *room, const char *js, size_t n, time_t now, ix_msg_result_t *out)
+static void on_node(const char *room, const char *js, size_t n, time_t now, ix_msg_result_t *out)
 {
     bool occ;
     char proom[16];
@@ -377,11 +391,11 @@ static void on_slave(const char *room, const char *js, size_t n, time_t now, ix_
     if (idx < 0) return;
     ix_status_t before, after;
     ix_room_status(idx, now, &before);
-    ix_slave_update(room, occ, now);
+    ix_node_update(room, occ, now);
     ix_room_status(idx, now, &after);
     if (before.state != after.state) {
         out->changed = true;
-        snprintf(out->log, sizeof out->log, "slave %s: %s", room, ix_state_name(after.state));
+        snprintf(out->log, sizeof out->log, "node %s: %s", room, ix_state_name(after.state));
     }
 }
 
@@ -464,5 +478,5 @@ void ix_msg_handle(const char *topic, size_t tl, const char *payload, size_t pl,
     char *s2 = s1 ? strchr(s1 + 1, '/') : NULL;
     if (!s1 || !s2 || s1 == rest || s2 == s1 + 1 || strcmp(s2, "/state") != 0) return;
     *s2 = 0;
-    on_slave(s1 + 1, payload, pl, now, out);
+    on_node(s1 + 1, payload, pl, now, out);
 }

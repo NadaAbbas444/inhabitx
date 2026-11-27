@@ -45,7 +45,7 @@ int main(void)
     ix_room_add("Z.1.10", 1, 6);
     char buf[4096];
 
-    /* M1: slave messages */
+    /* M1: node messages */
     msg("inhabitx/Z/1/Z.1.09/state", "{\"room\":\"Z.1.09\",\"occupied\":true,\"ts\":1764237600}", now);
     ix_status_t st;
     ix_room_status(ix_room_find("Z.1.09"), now, &st);
@@ -124,9 +124,9 @@ int main(void)
     msg("inhabitx/Z/bookings/new", "{\"req\":\"m1\",\"room\":\"Z.1.09\",\"from\":\"23:00\",\"to\":\"24:00\",\"people\":2,\"name\":\"Ann\",\"email\":\"ann2@uni.example\"}", now);
     CHECK(strcmp(r.reply_payload, "{\"ok\":true}") == 0);
     CHECK(ix_msg_rooms(now, false, buf, sizeof buf) > 0 && strstr(buf, "[\"23:00\",\"24:00\"]"));
-    ix_slave_update("Z.1.09", true, today(23, 30));
+    ix_node_update("Z.1.09", true, today(23, 30));
     CHECK(ix_msg_rooms(today(23, 30), false, buf, sizeof buf) > 0 && strstr(buf, "\"until\":\"24:00\""));
-    ix_slave_update("Z.1.09", true, now);
+    ix_node_update("Z.1.09", true, now);
 
     /* M4: building state */
     CHECK(ix_msg_rooms(now, false, buf, sizeof buf) > 0);
@@ -136,15 +136,15 @@ int main(void)
     CHECK(ix_msg_rooms(now, false, buf, 20) == 0);          /* too small */
 
     /* ghost: countdown in the message, stable form doesn't change per second */
-    ix_slave_update("Z.1.10", false, now);
+    ix_node_update("Z.1.10", false, now);
     msg("inhabitx/Z/bookings/new", "{\"req\":\"g1\",\"room\":\"Z.1.10\",\"from\":\"10:00\",\"to\":\"10:45\",\"people\":1,\"name\":\"Ann\",\"email\":\"ann@uni.example\"}", now);
     CHECK(strcmp(r.reply_payload, "{\"ok\":true}") == 0);
     char a[4096], b[4096];
     ix_msg_rooms(now + 1, false, buf, sizeof buf);
     CHECK(strstr(buf, "\"state\":\"ghost\",\"release_in_s\":"));
     CHECK(strstr(buf, "\"until\":\"10:45\""));
-    ix_slave_update("Z.1.09", true, now + 2);
-    ix_slave_update("Z.1.10", false, now + 2);
+    ix_node_update("Z.1.09", true, now + 2);
+    ix_node_update("Z.1.10", false, now + 2);
     ix_msg_rooms(now + 1, true, a, sizeof a);
     ix_msg_rooms(now + 3, true, b, sizeof b);
     CHECK(strcmp(a, b) == 0 && !strstr(a, "\"ts\""));
@@ -166,6 +166,11 @@ int main(void)
              (long long)now, (long long)now, (long long)(now - 3600));
     CHECK(strcmp(buf, want) == 0);
     CHECK(nothing_private());
+
+    /* last will: every room offline, no names */
+    CHECK(ix_msg_rooms_main_offline(buf, sizeof buf) > 0);
+    CHECK(strcmp(buf, "{\"ts\":0,\"main\":\"offline\",\"rooms\":[{\"id\":\"Z.1.09\",\"state\":\"offline\",\"seats\":8,\"floor\":1},"
+                      "{\"id\":\"Z.1.10\",\"state\":\"offline\",\"seats\":6,\"floor\":1}]}") == 0);
 
     if (s_fail) { printf("%d message check(s) failed\n", s_fail); return 1; }
     printf("all message checks passed\n");

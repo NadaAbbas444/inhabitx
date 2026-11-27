@@ -1,16 +1,16 @@
 /*
- * InhabitX master UI, PC simulator.
+ * InhabitX main UI, PC simulator.
  *
  * Opens an X11 window the size of the board's screen and runs the same
- * ui/ + logic/ code as the E84. Connects to the MQTT broker (README §4):
- * listens to the slaves, publishes the building state and answers bookings
+ * ui/ + logic/ code as the E84. Connects to the MQTT broker (README §3):
+ * listens to the nodes, publishes the building state and answers bookings
  * and found items from the web page. Type "h" in the terminal for commands.
  *
- *   ./master_sim               broker from sim/broker.conf, real clock
- *   ./master_sim --offline     no broker: built-in fake slaves + demo data
- *   ./master_sim --fake        broker, plus the built-in fake slaves
- *   ./master_sim --at 10:05    pretend it's 10:05 today (bookings need 07-22 h)
- *   ./master_sim --conf FILE   broker settings from FILE
+ *   ./main_sim               broker from sim/broker.conf, real clock
+ *   ./main_sim --offline     no broker: built-in fake nodes + demo data
+ *   ./main_sim --fake        broker, plus the built-in fake nodes
+ *   ./main_sim --at 10:05    pretend it's 10:05 today (bookings need 07-22 h)
+ *   ./main_sim --conf FILE   broker settings from FILE
  */
 #include "lvgl.h"
 #include "ui.h"
@@ -67,10 +67,10 @@ static lv_obj_t *find_focused_ta(lv_obj_t *o)
     return NULL;
 }
 
-static bool s_fakes = true;     /* built-in fake slaves running */
+static bool s_fakes = true;     /* built-in fake nodes running */
 static bool s_online;           /* using the broker */
 
-/* ---- fake slaves ------------------------------------------------------ */
+/* ---- fake nodes ------------------------------------------------------ */
 typedef struct { const char *id; uint16_t seats; bool occupied; bool online; } fake_t;
 static fake_t s_fake[] = {
     /* capacities from the AAU campus plan (campusplan.aau.at) */
@@ -82,12 +82,12 @@ static fake_t s_fake[] = {
 };
 #define N_FAKE ((int)(sizeof s_fake / sizeof s_fake[0]))
 
-static void publish_slaves(void)
+static void publish_nodes(void)
 {
     if (!s_fakes) return;
     time_t now = ix_now();
     for (int i = 0; i < N_FAKE; i++)
-        if (s_fake[i].online) ix_slave_update(s_fake[i].id, s_fake[i].occupied, now);
+        if (s_fake[i].online) ix_node_update(s_fake[i].id, s_fake[i].occupied, now);
 }
 
 static fake_t *find_fake(const char *arg)
@@ -120,7 +120,7 @@ static void help(void)
 {
     printf("commands (room = full id or suffix, e.g. 09):\n"
            "  o <room>   toggle someone there / empty\n"
-           "  x <room>   toggle slave online / offline\n"
+           "  x <room>   toggle node online / offline\n"
            "  g <room>   new booking starting now, nobody there (ghost demo)\n"
            "  s          print room states\n"
            "  t <x> <y>  tap the screen at x,y\n"
@@ -140,7 +140,7 @@ static void ghost_booking(const char *room_id)
 static void handle_line(char *line)
 {
     char cmd = line[0];
-    if ((cmd == 'o' || cmd == 'x') && !s_fakes) { printf("  built-in fake slaves are off (start with --fake or --offline)\n"); return; }
+    if ((cmd == 'o' || cmd == 'x') && !s_fakes) { printf("  built-in fake nodes are off (start with --fake or --offline)\n"); return; }
     fake_t *f = line[0] ? find_fake(line + 1) : NULL;
     switch (cmd) {
     case 'o': if (f) { f->occupied = !f->occupied; printf("  %s %s\n", f->id, f->occupied ? "occupied" : "empty"); } break;
@@ -157,7 +157,7 @@ static void handle_line(char *line)
     default:  if (cmd) help(); return;
     }
     if (!f) printf("  unknown room\n");
-    publish_slaves();
+    publish_nodes();
 }
 
 static void poll_stdin(void)
@@ -184,6 +184,7 @@ static void on_msg(const char *topic, size_t tl, const char *payload, size_t pl)
 }
 
 static char s_last_rooms[8192], s_last_found[8192];
+static mqtt_link_conf_t s_conf;
 
 static void on_up(void)
 {
@@ -214,11 +215,11 @@ static void seed(void)
     time_t now = ix_now();
     ix_init(now);
     for (int i = 0; i < N_FAKE; i++) ix_room_add(s_fake[i].id, 1, s_fake[i].seats);
-    publish_slaves();
-    if (s_online) return;   /* the real master starts empty */
+    publish_nodes();
+    if (s_online) return;   /* the real main starts empty */
 
     time_t first = ix_day_first_slot(now);
-    ix_slave_update("Z.1.08", false, now);      /* book it first, then people walk in */
+    ix_node_update("Z.1.08", false, now);      /* book it first, then people walk in */
     ix_book_err_t e1 = ix_book(ix_room_find("Z.1.08"), first, first + 3600, 20, "Lecture prep", "staff@aau.at", now);
     ix_book_err_t e2 = ix_book(ix_room_find("Z.1.09"), now, first + 3600, 3, "Sam", "sam@edu.aau.at", now);
     ix_book_err_t e3 = ix_book(ix_room_find("Z.1.10"), first + 7200, first + 10800, 4, "Felix", "felix@edu.aau.at", now);
@@ -226,7 +227,7 @@ static void seed(void)
         printf("note: demo bookings need a time between %02d:00 and %02d:00, try --at 10:05\n",
                IX_DAY_OPEN_H, IX_DAY_CLOSE_H - 2);
 
-    publish_slaves();
+    publish_nodes();
 
     /* a plausible morning for the occupancy chart */
     static const int8_t demo_hist[] = { 5, 10, 20, 35, 50, 60, 60, 55, 65, 80, 85, 75, 70, 60, 60, 55 };
@@ -260,18 +261,18 @@ int main(int argc, char **argv)
         mqtt_link_conf_t conf;
         char why[256];
         if (mqtt_link_load_conf(conf_path, &conf, why, sizeof why)) {
-            mqtt_link_start(&conf, "inhabitx-master-" IX_BUILDING, IX_TOPIC_SUB, on_msg, on_up);
+            s_conf = conf;
             s_online = true;
             s_fakes = fake;
         } else {
-            printf("broker: %s\nrunning offline with the built-in fake slaves (see sim/README.md)\n", why);
+            printf("broker: %s\nrunning offline with the built-in fake nodes (see sim/README.md)\n", why);
         }
     }
 
     lv_init();
     lv_log_register_print_cb(log_cb);
     lv_tick_set_cb(tick_ms);
-    lv_display_t *disp = lv_x11_window_create("InhabitX master (simulator)", UI_HOR_RES, UI_VER_RES);
+    lv_display_t *disp = lv_x11_window_create("InhabitX main (simulator)", UI_HOR_RES, UI_VER_RES);
     lv_x11_inputs_create(disp, NULL);
 
     /* The X11 driver hides the system pointer; draw a finger-sized dot instead */
@@ -297,16 +298,23 @@ int main(int argc, char **argv)
 
     seed();
     ui_init();
+    if (s_online) {
+        /* rooms are known now: leave "all offline" behind if we drop off */
+        static char will[4096];
+        ix_msg_rooms_main_offline(will, sizeof will);
+        mqtt_link_start(&s_conf, "inhabitx-main-" IX_BUILDING, IX_TOPIC_SUB,
+                        IX_TOPIC_ROOMS, will, on_msg, on_up);
+    }
 
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
-    printf("InhabitX master simulator %dx%d. Ghost release after %d s. %s\n", UI_HOR_RES, UI_VER_RES,
-           IX_GHOST_RELEASE_S, !s_online ? "Offline." : s_fakes ? "Broker + built-in fake slaves." : "Broker.");
+    printf("InhabitX main simulator %dx%d. Ghost release after %d s. %s\n", UI_HOR_RES, UI_VER_RES,
+           IX_GHOST_RELEASE_S, !s_online ? "Offline." : s_fakes ? "Broker + built-in fake nodes." : "Broker.");
     help();
 
     uint32_t last_pub = 0, last_state = 0;
     for (;;) {
         uint32_t wait = lv_timer_handler();
-        if (tick_ms() - last_pub >= 2000) { publish_slaves(); last_pub = tick_ms(); }
+        if (tick_ms() - last_pub >= 2000) { publish_nodes(); last_pub = tick_ms(); }
         if (s_online) {
             mqtt_link_poll();
             /* at most twice a second; states also change with time (offline, ghost release) */

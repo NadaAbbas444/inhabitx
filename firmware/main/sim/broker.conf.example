@@ -1,6 +1,6 @@
-# Broker settings for the master simulator.
+# Broker settings for the main simulator.
 # Copy to broker.conf (same folder) and fill in the password:
-#   cp firmware/master/sim/broker.conf.example firmware/master/sim/broker.conf
+#   cp firmware/main/sim/broker.conf.example firmware/main/sim/broker.conf
 # broker.conf is in .gitignore. Never commit the password.
 # IX_MQTT_HOST / _PORT / _USER / _PASSWORD / _CAFILE override these lines.
 host     = inhabitx-46341c9d.a03.euc1.aws.hivemq.cloud
