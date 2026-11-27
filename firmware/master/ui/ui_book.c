@@ -206,7 +206,7 @@ static void refresh_list(time_t now)
         strcpy(s_list_sig, sig);
         lv_obj_clean(s_list);
         if (closed) {
-            empty_note("Booking is closed for today", "Rooms can be booked from 07:00 to 22:00.");
+            empty_note("Booking is closed for today", "Rooms can be booked from 08:00 to 24:00.");
         } else if (s_mode == MODE_ANY) {
             for (int i = 0; i < nfit; i++) add_room_row(fit[i], IX_BOOK_OK, NULL, i == 0);
             if (!nfit) empty_note("No room fits", "Try a later start, a shorter slot\nor a smaller group.");

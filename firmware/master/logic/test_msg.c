@@ -120,6 +120,14 @@ int main(void)
     int nb = ix_room_bookings(ix_room_find("Z.1.09"), now, bk, 4);
     CHECK(nb == 1 && strcmp(bk[0]->name, "J\xc3\xbcrgen \"J\" \xf0\x9f\x98\x80") == 0);
 
+    /* a booking until midnight ends at "24:00", not "00:00" */
+    msg("inhabitx/Z/bookings/new", "{\"req\":\"m1\",\"room\":\"Z.1.09\",\"from\":\"23:00\",\"to\":\"24:00\",\"people\":2,\"name\":\"Ann\",\"email\":\"ann2@uni.example\"}", now);
+    CHECK(strcmp(r.reply_payload, "{\"ok\":true}") == 0);
+    CHECK(ix_msg_rooms(now, false, buf, sizeof buf) > 0 && strstr(buf, "[\"23:00\",\"24:00\"]"));
+    ix_slave_update("Z.1.09", true, today(23, 30));
+    CHECK(ix_msg_rooms(today(23, 30), false, buf, sizeof buf) > 0 && strstr(buf, "\"until\":\"24:00\""));
+    ix_slave_update("Z.1.09", true, now);
+
     /* M4: building state */
     CHECK(ix_msg_rooms(now, false, buf, sizeof buf) > 0);
     CHECK(strstr(buf, "{\"id\":\"Z.1.10\",\"state\":\"free\",\"free_until\":\"11:00\",\"seats\":6,\"floor\":1,"

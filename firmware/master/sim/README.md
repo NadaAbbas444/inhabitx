@@ -18,7 +18,7 @@ cmake --build firmware/master/sim/build -j
 | `--offline` | no broker: built-in fake slaves and demo bookings (also used when `broker.conf` has no password) |
 | `--fake` | broker **and** the built-in fake slaves, until real slaves or `tools/fake_slaves.py` run |
 | `--conf FILE` | broker settings from another file (or set `IX_BROKER_CONF`) |
-| `--at HH:MM` | pretend it's that time today. Bookings only work between 07:00 and 22:00 |
+| `--at HH:MM` | pretend it's that time today. Bookings only work between 08:00 and 24:00 |
 
 A booking nobody shows up for is released after 30 s (demo). For a test with real people (I2) build with the real 10 min: `cmake -S firmware/master/sim -B firmware/master/sim/build -DGHOST_RELEASE_S=600`.
 

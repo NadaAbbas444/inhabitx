@@ -213,11 +213,20 @@ static void w_str(out_t *o, const char *s)
     w(o, "\"");
 }
 
-static void w_hhmm(out_t *o, const char *key, time_t t)
+/* "HH:MM". An end time at midnight is "24:00", so it sorts after the start. */
+static void fmt_hhmm(char out[6], time_t t, bool end)
 {
     struct tm tm;
     localtime_r(&t, &tm);
-    w(o, ",\"%s\":\"%02d:%02d\"", key, tm.tm_hour, tm.tm_min);
+    int h = (end && tm.tm_hour == 0 && tm.tm_min == 0) ? 24 : tm.tm_hour;
+    snprintf(out, 6, "%02d:%02d", h % 100, tm.tm_min);
+}
+
+static void w_hhmm(out_t *o, const char *key, time_t t, bool end)
+{
+    char s[6];
+    fmt_hhmm(s, t, end);
+    w(o, ",\"%s\":\"%s\"", key, s);
 }
 
 static size_t done(out_t *o) { return o->over ? 0 : o->len; }
@@ -240,16 +249,16 @@ size_t ix_msg_rooms(time_t now, bool stable, char *buf, size_t n)
             if (stable) w(&o, ",\"release_at\":%lld", (long long)(now + st.release_in_s));
             else        w(&o, ",\"release_in_s\":%d", (int)st.release_in_s);
         }
-        if (st.until && st.state != IX_FREE && st.state != IX_OFFLINE) w_hhmm(&o, "until", st.until);
-        if (st.state == IX_FREE && st.free_until) w_hhmm(&o, "free_until", st.free_until);
+        if (st.until && st.state != IX_FREE && st.state != IX_OFFLINE) w_hhmm(&o, "until", st.until, true);
+        if (st.state == IX_FREE && st.free_until) w_hhmm(&o, "free_until", st.free_until, false);
         w(&o, ",\"seats\":%u,\"floor\":%u,\"slots\":[", (unsigned)ri->seats, (unsigned)ri->floor);
         const ix_booking_t *bk[IX_MAX_BOOKINGS];
         int nb = ix_room_bookings(i, now, bk, IX_MAX_BOOKINGS);
         for (int j = 0; j < nb; j++) {
-            struct tm a, b;
-            localtime_r(&bk[j]->start, &a);
-            localtime_r(&bk[j]->end, &b);
-            w(&o, "%s[\"%02d:%02d\",\"%02d:%02d\"]", j ? "," : "", a.tm_hour, a.tm_min, b.tm_hour, b.tm_min);
+            char a[6], b[6];
+            fmt_hhmm(a, bk[j]->start, false);
+            fmt_hhmm(b, bk[j]->end, true);
+            w(&o, "%s[\"%s\",\"%s\"]", j ? "," : "", a, b);
         }
         w(&o, "]}");
     }

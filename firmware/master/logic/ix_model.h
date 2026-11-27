@@ -26,8 +26,8 @@ extern "C" {
 #define IX_MAX_BOOKINGS_PER_MAIL 2
 #define IX_MAX_BOOKING_S        (4 * 3600)
 #define IX_SLOT_S               (15 * 60)
-#define IX_DAY_OPEN_H           7       /* bookable from 07:00 ...          */
-#define IX_DAY_CLOSE_H          22      /* ... until 22:00, today only      */
+#define IX_DAY_OPEN_H           8       /* bookable from 08:00 ...          */
+#define IX_DAY_CLOSE_H          24      /* ... until midnight, today only   */
 #define IX_FOUND_KEEP_S         (7 * 24 * 3600)
 
 #define IX_MAX_ROOMS            32

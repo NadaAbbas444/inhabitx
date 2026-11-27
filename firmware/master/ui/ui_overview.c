@@ -499,7 +499,7 @@ void ui_room_drawer(int room)
     lv_obj_t *cap = ui_caption(d, "TODAY");
     lv_obj_set_style_pad_top(cap, 14, 0);
 
-    /* timeline 07:00 - 22:00 */
+    /* timeline from opening to closing (IX_DAY_OPEN_H - IX_DAY_CLOSE_H) */
     int tw = w - 48;
     time_t open = ix_day_first_slot(now);
     struct tm tm;

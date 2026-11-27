@@ -222,7 +222,7 @@ sequenceDiagram
 1. Booking = name + email. No account, no confirmation.
 2. Maximum 2 active bookings per email.
 3. Nobody there within 10 minutes of the start → the room is released.
-4. Today only, between 07:00 and 22:00, at most 4 hours, in 15-minute steps.
+4. Today only, between 08:00 and 24:00, at most 4 hours, in 15-minute steps.
 5. If the master doesn't answer within 8 s (e.g. the laptop is off), the web page says so and nothing is booked.
 
 ---

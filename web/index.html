@@ -402,7 +402,7 @@ const CATS = { phone: 'Phone', keys: 'Keys', wallet: 'Wallet / cards', bag: 'Bag
   clothing: 'Clothing', electronics: 'Laptop / electronics', umbrella: 'Umbrella', glasses: 'Glasses', other: 'Other' };
 const STATE = { free: ['Free', '--free'], booked: ['Booked', '--booked'], ghost: ['No-show', '--ghost'],
   occupied: ['In use', '--busy'], offline: ['Offline', '--offline'] };
-const OPEN = 7 * 60, CLOSE = 22 * 60, SLOT = 15, MAXLEN = 240;
+const OPEN = 8 * 60, CLOSE = 24 * 60, SLOT = 15, MAXLEN = 240;
 const TITLES = { overview: 'Find a free room', campus: 'Universität Klagenfurt', book: 'Book a room', lf: 'Lost & Found' };
 
 /* ---- helpers --------------------------------------------------------------- */
@@ -623,7 +623,7 @@ function renderBook() {
   const list = bk.mode === 'any' ? fit : all;
   $('b-list-title').textContent = bk.mode === 'any' ? 'Rooms that fit' : 'Pick a room';
   $('b-count').textContent = `${fit.length} of ${rooms.length} available`;
-  $('b-list').innerHTML = closed ? '<div class="muted">Booking is closed for today (07:00 – 22:00).</div>'
+  $('b-list').innerHTML = closed ? '<div class="muted">Booking is closed for today (08:00 – 24:00).</div>'
     : list.map(({ r, c }, i) => {
       const color = c[1] ? '--free' : '--offline';
       return `<button class="pick${r.id === bk.room ? ' sel' : ''}" data-pick="${esc(r.id)}" ${c[1] ? '' : 'disabled'}>
