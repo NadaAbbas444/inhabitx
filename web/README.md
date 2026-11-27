@@ -19,7 +19,7 @@ At the top of the script in `index.html`:
 
 ## Messages
 
-> **Proposal, needs the architecture chat's OK.** README §4 currently says the web page is view-only and that names/emails never go online. Booking from the web needs the additions below. Nothing in README.md has been changed.
+Agreed and written into README §4 (topics) and §6 (booking). Keep this file and README §4 in sync.
 
 ### Read (login `web`, read-only)
 
@@ -35,7 +35,7 @@ At the top of the script in `index.html`:
 - `seats`, `floor`: otherwise the page falls back to its own table.
 - `slots`: today's booked times **without names**, used for the booking bars and for greying out clashes.
 
-`inhabitx/<b>/lostfound` (retained, **new**):
+`inhabitx/<b>/lostfound` (retained):
 
 ```json
 {"ts": 1764237600, "items": [{"room": "Z.1.10", "cat": "umbrella", "ts": 1764234000, "online": false}]}
@@ -43,7 +43,7 @@ At the top of the script in `index.html`:
 
 `cat` is one of `phone keys wallet bag bottle clothing electronics umbrella glasses other`. `online: true` = reported on the web and not confirmed at the desk yet. Items older than 7 days are dropped by the master.
 
-### Send (login `webbook`, new: write `inhabitx/+/bookings/new` and `inhabitx/+/lostfound/new`, read `inhabitx/+/replies/#`, nothing else)
+### Send (login `webhook`: write `inhabitx/+/bookings/new` and `inhabitx/+/lostfound/new`, read `inhabitx/+/replies/#`, nothing else)
 
 `inhabitx/<b>/bookings/new`:
 

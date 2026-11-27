@@ -1,8 +1,18 @@
-# Master firmware (E84 + screen, one per building)
+# Master (one per building)
+
+Runs on the **laptop** for now (see README §3, "What runs where right now"), on an E84 + screen later.
 
 - Subscribes to `inhabitx/<building>/#` and keeps the latest state of every room
-- Runs the logic: room state, bookings (name + email, max 2 per email), ghost release
-- Draws the screen UI with LVGL (native UI, not a web page): floor map, free-now list, booking
-- Publishes the building state to `inhabitx/<building>/rooms` (retained), with no names or emails
+- Runs the logic: room state, bookings (name + email, max 2 per email), ghost release, lost & found
+- Answers booking and found-item requests from the web page on `replies/<req>`
+- Draws the screen UI with LVGL (native UI, not a web page)
+- Publishes the building state and found items (retained), with no names or emails
 
-See README §4–§7 for the messages, the logic and the wireframes.
+| Folder | What | Status |
+|---|---|---|
+| `logic/` | plain C, no LVGL, no MQTT | done, tests pass |
+| `ui/` | LVGL screen UI | done in the simulator |
+| `sim/` | runs the master on a Linux laptop | done, MQTT still to add (M1, M4, M6) |
+| `assets/` | generators for floor plan, campus map, fonts | done |
+
+How to build and run: [sim/README.md](sim/README.md). Messages, logic and booking rules: README §4–§6.
