@@ -74,6 +74,18 @@ void ui_lf_create(lv_obj_t *parent);
 void ui_lf_refresh(time_t now);
 void ui_lf_reset(void);
 
+/* floor plan asset (floorplan.c, generated: real outline, approximate interior) */
+enum { UI_PLAN_LIVE, UI_PLAN_ROOM, UI_PLAN_LABEL };
+typedef struct { const char *id; uint8_t kind; int16_t x, y, w, h; } ui_plan_room_t;
+extern const lv_image_dsc_t ui_img_floorplan;
+extern const ui_plan_room_t ui_plan_rooms[];
+extern const int ui_plan_room_count;
+extern const lv_point_t ui_plan_here;
+extern const lv_image_dsc_t ui_img_floorplan_full;          /* whole floor, full-screen view */
+extern const ui_plan_room_t ui_plan_full_rooms[];
+extern const int ui_plan_full_room_count;
+extern const lv_point_t ui_plan_full_here;
+
 /* campus map asset (campus_map.c, generated from OpenStreetMap) */
 typedef struct { const char *code, *name; int16_t x, y; bool live; } ui_campus_label_t;
 extern const lv_image_dsc_t ui_img_campus;

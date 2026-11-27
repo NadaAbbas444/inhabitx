@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0A0F1C">
 <title>InhabitX · Free rooms</title>
-<meta name="description" content="Live free rooms in the Zentralgebäude, Universität Klagenfurt. Sensed by the rooms themselves, no cameras.">
+<meta name="description" content="Find, book and check free rooms in the Zentralgebäude, Universität Klagenfurt. The rooms sense for themselves, no cameras.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -13,423 +13,820 @@
 <style>
   /* Same tokens as the master screen (firmware/master/ui/ui_internal.h) */
   :root {
-    --bg: #0A0F1C; --bg2: #0F1933; --card: #121A2C; --card2: #19233A; --card3: #22304E;
+    --bg: #0A0F1C; --bg2: #0F1933; --side: #0D1426; --card: #121A2C; --card2: #19233A; --card3: #22304E;
     --line: #1E2942; --text: #F1F5FB; --muted: #8B97AE; --faint: #56627C;
     --accent: #3B7BFF; --accent2: #6D5BFF;
     --free: #22C55E; --busy: #F43F5E; --ghost: #F59E0B; --booked: #818CF8; --offline: #64748B;
-    --r: 18px;
+    --r: 18px; --side-w: 220px;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
   html { background: var(--bg); }
-  body {
-    background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%) fixed;
-    color: var(--text); font: 15px/1.45 Roboto, system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased; min-height: 100vh;
-  }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 40px; }
-  button { font: inherit; color: inherit; }
+  html, body { margin: 0; }
+  body { background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%) fixed; color: var(--text);
+         font: 15px/1.45 Roboto, system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  [hidden] { display: none !important; }
 
-  /* header */
-  header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-  .logo { font-weight: 700; font-size: 26px; letter-spacing: -.3px; }
+  /* ---- shell: sidebar (desktop) / bottom tabs (phone) ---- */
+  .side { position: fixed; inset: 0 auto 0 0; width: var(--side-w); background: var(--side); border-right: 1px solid var(--line);
+          padding: 22px 16px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+  .logo { font-weight: 700; font-size: 28px; letter-spacing: -.3px; padding-left: 6px; }
   .logo b { color: var(--accent); }
-  .sub { color: var(--muted); font-size: 13px; }
-  .spacer { flex: 1; }
-  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 99px;
-          font-size: 12px; font-weight: 500; background: color-mix(in srgb, var(--c) 16%, transparent);
-          color: color-mix(in srgb, var(--c) 45%, white); white-space: nowrap; }
-  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
-  .pill.live::before { animation: pulse 1.6s infinite; }
-  @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 70%, transparent); }
-                     100% { box-shadow: 0 0 0 8px transparent; } }
+  .logo-sub { color: var(--muted); font-size: 13px; padding: 0 6px 18px; }
+  .nav { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; border-radius: 12px;
+         background: none; color: var(--muted); font-weight: 500; text-align: left; }
+  .nav svg { width: 18px; height: 18px; flex: none; }
+  .nav:hover { background: var(--card2); }
+  .nav.on { background: var(--card3); color: var(--text); }
+  .nav.on svg { color: var(--accent); }
+  .side .grow { flex: 1; }
+  .bcard { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 6px; }
+  .bcard b { font-size: 17px; }
+  .powered { color: var(--faint); font-size: 12px; padding: 6px 4px 0; }
+  main { margin-left: var(--side-w); padding: 18px 24px 40px; max-width: 1240px; }
 
-  /* layout */
-  .grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
-  @media (min-width: 900px) { .grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; } }
-  .col { display: grid; gap: 16px; min-width: 0; }
+  @media (max-width: 860px) {
+    .side { inset: auto 0 0 0; width: auto; height: calc(64px + env(safe-area-inset-bottom)); flex-direction: row;
+            padding: 6px 6px env(safe-area-inset-bottom); border-right: 0; border-top: 1px solid var(--line); gap: 2px; }
+    .side .logo, .side .logo-sub, .side .grow, .side .bcard, .side .powered { display: none; }
+    .nav { flex: 1; flex-direction: column; gap: 3px; padding: 8px 2px; font-size: 11px; text-align: center; justify-content: center; }
+    main { margin-left: 0; padding: 14px 14px calc(90px + env(safe-area-inset-bottom)); }
+  }
+
+  /* ---- header ---- */
+  .head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .greet { color: var(--muted); }
+  .title { font-size: 30px; font-weight: 700; line-height: 1.15; margin: 2px 0 0; }
+  .clock { text-align: right; margin-left: auto; }
+  .clock b { font-size: 30px; display: block; line-height: 1.15; }
+  .clock span { color: var(--muted); font-size: 13px; }
+  .mlogo { display: none; }
+  @media (max-width: 860px) {
+    .title { font-size: 24px; } .clock b { font-size: 24px; }
+    .mlogo { display: block; font-weight: 700; font-size: 22px; } .mlogo b { color: var(--accent); }
+  }
+
+  /* ---- common ---- */
   .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
   .cap { font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
   h2 { font-size: 18px; margin: 0; }
   .row { display: flex; align-items: center; gap: 10px; }
+  .spacer { flex: 1; }
+  .muted { color: var(--muted); } .small { font-size: 13px; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 500;
+          background: color-mix(in srgb, var(--c) 16%, transparent); color: color-mix(in srgb, var(--c) 45%, white); white-space: nowrap; }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+  .pill.pulse::before { animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 70%, transparent); } 100% { box-shadow: 0 0 0 8px transparent; } }
+  .btn { border: 0; border-radius: 12px; padding: 13px 20px; font-weight: 500; color: #fff;
+         background: linear-gradient(90deg, var(--accent), var(--accent2)); box-shadow: 0 6px 20px -8px #3B7BFF; }
+  .btn:disabled { background: var(--card2); color: var(--faint); box-shadow: none; cursor: default; }
+  .btn.wide { width: 100%; }
+  .btn2 { border: 1px solid var(--line); border-radius: 12px; padding: 12px 18px; background: var(--card2); font-weight: 500; }
+  .round { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card3); font-size: 20px; line-height: 1; flex: none; }
+  .round:active, .btn2:active { background: var(--card3); }
+  .banner { background: #6D5BFF22; color: #C4BDFF; border: 1px solid #6D5BFF55; border-radius: 12px; padding: 8px 12px; font-size: 13px; margin-bottom: 14px; }
+  .grid2 { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 1000px) { .grid2 { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: start; } }
+  .col { display: grid; gap: 16px; min-width: 0; align-content: start; }
 
-  /* hero */
-  .hero { position: relative; overflow: hidden; border-radius: var(--r); padding: 22px;
-          background: linear-gradient(100deg, #2563EB, var(--accent2)); box-shadow: 0 10px 40px -12px #3B7BFF66; }
+  /* tiles (same as the screen's pickers) */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .tile-btn { border: 1px solid var(--line); background: var(--card2); border-radius: 12px; padding: 12px 10px; font-weight: 500; }
+  .tile-btn.sel { background: var(--card3); border: 2px solid var(--accent); padding: 11px 9px; }
+  .chips { display: flex; gap: 8px; }
+  .chip { flex: 1; border: 1px solid var(--line); background: var(--card2); border-radius: 99px; padding: 8px 10px; font-size: 13px; }
+  .chip.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ---- overview ---- */
+  .hero { position: relative; overflow: hidden; border-radius: var(--r); padding: 22px; background: linear-gradient(100deg, #2563EB, var(--accent2));
+          box-shadow: 0 10px 40px -12px #3B7BFF66; }
   .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; background: #fff; }
   .hero::before { width: 240px; height: 240px; right: -70px; top: -110px; opacity: .06; }
-  .hero::after  { width: 150px; height: 150px; right: 120px; bottom: -90px; opacity: .07; }
+  .hero::after { width: 150px; height: 150px; right: 120px; bottom: -90px; opacity: .07; }
   .hero .cap { color: #ffffffc0; }
-  .hero-main { display: flex; align-items: flex-end; gap: 14px; margin-top: 18px; position: relative; }
+  .hero-main { display: flex; align-items: flex-end; gap: 14px; margin-top: 16px; position: relative; }
   .hero-num { font-size: 64px; font-weight: 700; line-height: .9; }
   .hero-text { font-size: 22px; font-weight: 700; }
   .hero-sub { font-size: 13px; color: #ffffffc8; }
-  .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; position: relative; }
-  .stat { display: flex; align-items: center; gap: 8px; background: #ffffff1f; padding: 6px 11px; border-radius: 10px;
-          font-weight: 500; font-size: 14px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; position: relative; }
+  .stat { display: flex; align-items: center; gap: 8px; background: #ffffff1f; padding: 6px 11px; border-radius: 10px; font-weight: 500; font-size: 14px; }
   .stat i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); border: 1px solid #fff; }
-
-  /* rooms */
-  .rooms-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
   .tag { font-size: 12px; font-weight: 500; color: var(--accent); background: #3B7BFF28; padding: 3px 8px; border-radius: 6px; }
   .stepper { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
-  .round { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--card2);
-           cursor: pointer; font-size: 18px; line-height: 1; }
-  .round:active { background: var(--card3); }
-  .stepper b { color: var(--text); font-size: 17px; min-width: 22px; text-align: center; }
-  .room { display: grid; grid-template-columns: 40px 1fr auto; gap: 4px 12px; align-items: center;
-          padding: 12px 2px; border-top: 1px solid var(--line); }
-  .room:first-of-type { border-top: 0; }
+  .stepper b { color: var(--text); font-size: 17px; min-width: 24px; text-align: center; }
+  .room { display: grid; grid-template-columns: 40px 1fr auto; gap: 2px 12px; align-items: center; padding: 12px 2px; border-top: 1px solid var(--line); }
+  .room:first-child { border-top: 0; }
   .room.dim { opacity: .45; }
-  .tile { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-weight: 500;
-          background: color-mix(in srgb, var(--c) 22%, transparent); color: color-mix(in srgb, var(--c) 45%, white); grid-row: span 2; }
+  .rtile { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-weight: 500; grid-row: span 2;
+           background: color-mix(in srgb, var(--c) 22%, transparent); color: color-mix(in srgb, var(--c) 45%, white); }
   .room .id { font-weight: 500; }
   .room .meta { color: var(--muted); font-size: 13px; }
-  .room .right { text-align: right; grid-row: span 2; display: grid; gap: 4px; justify-items: end; }
+  .room .right { grid-row: span 2; display: flex; align-items: center; gap: 10px; }
+  .room .rcol { display: grid; gap: 4px; justify-items: end; }
   .room .detail { font-size: 13px; color: var(--muted); }
   .room .detail.warn { color: var(--ghost); font-variant-numeric: tabular-nums; }
-  .bar { grid-column: 2 / 4; height: 6px; border-radius: 4px; background: var(--card2); position: relative; overflow: hidden; margin-top: 4px; }
+  .room .book { padding: 8px 14px; font-size: 13px; }
+  .bar { grid-column: 2 / 4; height: 6px; border-radius: 4px; background: var(--card2); position: relative; overflow: hidden; margin-top: 6px; }
   .bar span { position: absolute; top: 0; bottom: 0; background: var(--booked); opacity: .8; }
   .bar em { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; }
-  .note { color: var(--muted); font-size: 13px; margin: 12px 0 0; }
-  .empty { color: var(--muted); padding: 16px 0; }
+  .plan { margin-top: 10px; }
+  .plan svg { width: 100%; height: auto; display: block; }
+  .plan .live { cursor: pointer; }
+  .plan .live rect { transition: fill .3s, stroke .3s; }
+  .plan text { font-family: Roboto, sans-serif; font-weight: 500; text-anchor: middle; dominant-baseline: central; }
+  .plan .here-dot { animation: here 1.6s infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes here { 0% { stroke-width: 0; stroke-opacity: .8; } 100% { stroke-width: 3; stroke-opacity: 0; } }
 
-  /* map */
-  #map { height: 300px; border-radius: 14px; margin-top: 12px; background: #0b1222; }
-  @media (min-width: 900px) { #map { height: 340px; } }
+  .fullplan { position: fixed; inset: 0; z-index: 30; background: linear-gradient(180deg, var(--bg), var(--bg2)); padding: 18px 20px;
+              display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+  .fullplan .plan { flex: 1; display: grid; place-items: center; }
+  .fullplan svg { width: 100%; max-height: calc(100vh - 160px); border-radius: var(--r); border: 1px solid var(--line); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* ---- campus ---- */
+  #map { height: calc(100vh - 140px); min-height: 380px; border-radius: var(--r); border: 1px solid var(--line); background: #0b1222; }
+  @media (max-width: 860px) { #map { height: calc(100vh - 220px); } }
   .leaflet-container { font: inherit; }
-  /* OSM's standard tiles, turned dark to match the theme */
   .leaflet-tile-pane { filter: invert(1) hue-rotate(200deg) brightness(.82) contrast(.92) saturate(.6); }
-  .leaflet-tooltip.zlabel { background: var(--card); color: var(--text); border: 1px solid var(--accent);
-          border-radius: 10px; padding: 6px 10px; box-shadow: 0 6px 24px -6px #3B7BFF88; font-weight: 500; }
+  .leaflet-tooltip.zlabel { background: var(--card); color: var(--text); border: 1px solid var(--accent); border-radius: 12px; padding: 8px 12px;
+          box-shadow: 0 6px 24px -6px #3B7BFF88; font: 500 14px Roboto, sans-serif; }
   .leaflet-tooltip.zlabel::before { display: none; }
   .leaflet-control-attribution { background: #0A0F1Ccc !important; color: var(--muted) !important; }
   .leaflet-control-attribution a { color: var(--muted) !important; }
 
-  /* lost & found */
-  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-  label { display: grid; gap: 6px; font-size: 12px; color: var(--muted); letter-spacing: .5px; }
-  select { appearance: none; background: var(--card2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238B97AE' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;
-           border: 1px solid var(--line); color: var(--text); border-radius: 12px; padding: 12px; font: inherit; }
-  select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  .btn { width: 100%; margin-top: 12px; padding: 13px; border: 0; border-radius: 12px; font-weight: 500; cursor: pointer;
-         color: #fff; background: linear-gradient(90deg, var(--accent), var(--accent2)); box-shadow: 0 6px 20px -8px #3B7BFF; }
-  .result { margin-top: 14px; display: grid; gap: 8px; }
+  /* ---- book ---- */
+  .seg { display: flex; gap: 4px; padding: 4px; border-radius: 99px; background: var(--card2); }
+  .seg button { flex: 1; border: 0; border-radius: 99px; padding: 10px; background: none; color: var(--muted); font-weight: 500; }
+  .seg button.on { background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #fff; }
+  .step { display: flex; align-items: center; gap: 10px; background: var(--card2); border-radius: 14px; padding: 8px 8px 8px 14px; }
+  .step .lbl { color: var(--muted); font-weight: 500; flex: 1; }
+  .step b { font-size: 22px; min-width: 76px; text-align: center; }
+  .stack { display: grid; gap: 10px; }
+  .pick { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px;
+          background: var(--card2); text-align: left; }
+  .pick.sel { border: 2px solid var(--accent); background: var(--card3); padding: 9px 11px; }
+  .pick:disabled { opacity: .4; cursor: default; }
+  .pick .grow { flex: 1; }
+  .pick small { display: block; color: var(--muted); }
+  .why { font-size: 13px; color: var(--muted); } .why.ok { color: var(--free); }
+  input { width: 100%; background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; color: var(--text);
+          font: 500 17px Roboto, sans-serif; }
+  input:focus { outline: none; border: 2px solid var(--accent); padding: 13px; }
+  input::placeholder { color: var(--faint); }
+  .fields { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 640px) { .fields { grid-template-columns: 1fr 1fr; } }
+  label.f { display: grid; gap: 6px; }
+  .err { color: var(--busy); font-weight: 500; min-height: 20px; }
+  .done { text-align: center; display: grid; gap: 10px; justify-items: center; padding: 20px 6px; }
+  .okc { width: 84px; height: 84px; border-radius: 50%; background: var(--free); display: grid; place-items: center; box-shadow: 0 0 60px -4px #22C55E99; }
+  .okc svg { width: 40px; height: 40px; color: #fff; }
+  .okc.warn { background: var(--ghost); box-shadow: 0 0 60px -4px #F59E0B99; }
+  .infob { display: flex; gap: 12px; align-items: center; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; max-width: 520px; }
+  .icon-t { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none;
+            background: color-mix(in srgb, var(--c) 22%, transparent); color: var(--c); }
+  .icon-t svg { width: 20px; height: 20px; }
+
+  /* ---- lost & found ---- */
+  .choice { border: 1px solid var(--line); border-radius: var(--r); padding: 22px; text-align: left; display: grid; gap: 8px; align-content: start;
+            background: linear-gradient(180deg, var(--card), color-mix(in srgb, var(--c) 16%, var(--card))); min-height: 210px; }
+  .choice:hover { border-color: var(--c); }
+  .choice h3 { margin: 8px 0 0; font-size: 22px; }
+  .choice .go { color: var(--c); font-weight: 500; margin-top: auto; }
   .item { display: flex; align-items: center; gap: 12px; background: var(--card2); border-radius: 12px; padding: 10px 12px; }
-  .item .ic { width: 34px; height: 34px; border-radius: 10px; background: #22C55E33; color: var(--free); display: grid; place-items: center; font-weight: 700; }
   .item .grow { flex: 1; min-width: 0; }
   .item small { display: block; color: var(--muted); }
   .item time { color: var(--muted); font-size: 13px; white-space: nowrap; }
-  .res-title { font-weight: 700; }
-
   footer { margin-top: 22px; color: var(--faint); font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
-  .banner { background: #6D5BFF22; color: #C4BDFF; border: 1px solid #6D5BFF55; border-radius: 12px;
-            padding: 8px 12px; font-size: 13px; margin-bottom: 14px; display: none; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <div class="logo">Inhabi<b>X</b></div>
-      <div class="sub">Universität Klagenfurt · Zentralgebäude</div>
-    </div>
-    <div class="spacer"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 2 11h3v9h5v-6h4v6h5v-9h3z"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="currentColor" d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path fill="currentColor" d="M3 7l9-4 9 4v10l-9 4-9-4zm9 2.2L5.5 6.6 12 4.8l6.5 1.8zM5 8.6v7.1l6 2.7v-7.1zm8 9.8 6-2.7V8.6l-6 2.7z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.5-2.5h-5A2.5 2.5 0 0 0 12 22zm7-6V11a7 7 0 0 0-5.5-6.8V3h-3v1.2A7 7 0 0 0 5 11v5l-2 2v1h18v-1z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="currentColor" d="M11 3h2v10l3.5-3.5 1.4 1.4L12 16.8l-5.9-5.9 1.4-1.4L11 13zM4 18h16v3H4z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2 1 21h22zm-1 7h2v6h-2zm0 8h2v2h-2z"/></symbol>
+</svg>
+
+<nav class="side" aria-label="Pages">
+  <div class="logo">Inhabi<b>X</b></div>
+  <div class="logo-sub">Smart Campus · AAU</div>
+  <button class="nav" data-page="overview"><svg><use href="#i-home"/></svg>Overview</button>
+  <button class="nav" data-page="campus"><svg><use href="#i-map"/></svg>Campus map</button>
+  <button class="nav" data-page="book"><svg><use href="#i-plus"/></svg>Book a room</button>
+  <button class="nav" data-page="lf"><svg><use href="#i-box"/></svg>Lost &amp; Found</button>
+  <div class="grow"></div>
+  <div class="bcard">
+    <b>Building Z</b><span class="muted small">Zentralgebäude</span>
     <span class="pill" id="conn" style="--c: var(--ghost)">Connecting</span>
-  </header>
+  </div>
+  <div class="powered">Powered by Infineon PSOC™ Edge</div>
+</nav>
 
-  <div class="banner" id="demo">Demo data: no broker configured. Add the read-only login in <code>CONFIG</code> to go live.</div>
+<main>
+  <div class="head">
+    <div>
+      <div class="mlogo">Inhabi<b>X</b></div>
+      <div class="greet" id="greet">Hello</div>
+      <h1 class="title" id="title">Find a free room</h1>
+    </div>
+    <div class="clock"><b id="time">–</b><span id="date"></span></div>
+  </div>
+  <div class="banner" id="demo" hidden>Demo data. Add the broker logins in <code>CONFIG</code> to go live.</div>
 
-  <div class="grid">
+  <!-- ============ OVERVIEW ============ -->
+  <section id="p-overview" class="grid2">
     <div class="col">
-      <section class="hero" aria-live="polite">
+      <div class="hero" aria-live="polite">
         <div class="cap">Free right now</div>
         <div class="hero-main">
           <div class="hero-num" id="free-n">–</div>
-          <div>
-            <div class="hero-text" id="free-text">rooms free</div>
-            <div class="hero-sub" id="free-sub">Building Z · updated –</div>
-          </div>
+          <div><div class="hero-text" id="free-text">rooms free</div><div class="hero-sub" id="free-sub">floor 1 · Zentralgebäude</div></div>
         </div>
         <div class="stats">
-          <div class="stat" style="--c: var(--busy)"><i></i><span id="s-busy">– in use</span></div>
-          <div class="stat" style="--c: var(--ghost)"><i></i><span id="s-ghost">– may free up</span></div>
-          <div class="stat" style="--c: var(--offline)"><i></i><span id="s-off">– offline</span></div>
+          <div class="stat" style="--c: var(--busy)"><i></i><span id="s-busy">–</span></div>
+          <div class="stat" style="--c: var(--ghost)"><i></i><span id="s-ghost">–</span></div>
+          <div class="stat" style="--c: var(--offline)"><i></i><span id="s-off">–</span></div>
         </div>
-      </section>
-
-      <section class="card">
-        <div class="rooms-head">
-          <h2>Rooms</h2><span class="tag">Floor 1</span>
-          <div class="spacer"></div>
-          <div class="stepper">Group size
-            <button class="round" id="minus" aria-label="Fewer people">−</button>
-            <b id="people">1</b>
-            <button class="round" id="plus" aria-label="More people">+</button>
-          </div>
+      </div>
+      <div class="card">
+        <div class="row" style="flex-wrap:wrap;margin-bottom:6px">
+          <h2>Rooms</h2><span class="tag">Floor 1</span><div class="spacer"></div>
+          <div class="stepper">Group size <button class="round" data-people="-1" aria-label="Fewer people">−</button>
+            <b id="people">1</b><button class="round" data-people="1" aria-label="More people">+</button></div>
         </div>
-        <div id="rooms"><div class="empty">Waiting for the building…</div></div>
-        <p class="note">Want one of these? Book it on the screen at the Zentralgebäude entrance: name + email, no account. If nobody shows up, the room frees itself again.</p>
-      </section>
+        <div id="rooms"><div class="muted" style="padding:16px 0">Waiting for the building…</div></div>
+      </div>
     </div>
-
     <div class="col">
-      <section class="card">
-        <div class="row"><h2>Campus</h2><div class="spacer"></div><span class="pill" style="--c: var(--accent)" id="map-pill">Live building</span></div>
-        <div id="map" role="img" aria-label="Map of the Universität Klagenfurt campus with the Zentralgebäude highlighted"></div>
-      </section>
-
-      <section class="card">
-        <h2>Lost something?</h2>
-        <p class="note" style="margin-top:6px">Check if it was handed in before walking to the desk. Only the room, the type of item and the time are listed.</p>
-        <div class="fields">
-          <label>ROOM <select id="lf-room"><option value="">Not sure</option></select></label>
-          <label>WHAT IS IT <select id="lf-cat"><option value="">Any type</option></select></label>
-        </div>
-        <button class="btn" id="lf-go">Search</button>
-        <div class="result" id="lf-res"></div>
-      </section>
+      <div class="card">
+        <div class="row"><h2>Floor 1</h2><div class="spacer"></div><button class="btn2" id="open-full" style="padding:7px 14px;border-radius:99px;font-size:13px">Whole floor ›</button></div>
+        <div class="plan" id="plan"></div>
+      </div>
+      <div class="card">
+        <div class="cap">Updated</div>
+        <div class="row" style="margin-top:6px"><b id="updated" style="font-size:22px">–</b></div>
+        <p class="muted small" style="margin:8px 0 0">Every room has its own sensor that only reports “someone there or not”. No cameras, no names online.</p>
+        <p class="muted small" style="margin:8px 0 0">Floor plan: outer walls from OpenStreetMap, room layout approximate.</p>
+      </div>
     </div>
+  </section>
+
+  <!-- ============ CAMPUS ============ -->
+  <section id="p-campus" hidden>
+    <div id="map" role="img" aria-label="Map of the Universität Klagenfurt campus with the Zentralgebäude highlighted"></div>
+  </section>
+
+  <!-- ============ BOOK ============ -->
+  <section id="p-book" hidden>
+    <div class="grid2" id="book-pick">
+      <div class="card stack">
+        <div class="cap">What do you need?</div>
+        <div class="seg"><button data-mode="any">Any free room</button><button data-mode="specific">Specific room</button></div>
+        <div class="step"><span class="lbl">People</span><button class="round" data-b="people" data-d="-1">−</button><b id="b-people">1</b><button class="round" data-b="people" data-d="1">+</button></div>
+        <div class="step"><span class="lbl">From</span><button class="round" data-b="from" data-d="-1">−</button><b id="b-from">Now</b><button class="round" data-b="from" data-d="1">+</button></div>
+        <div class="step"><span class="lbl">Until</span><button class="round" data-b="to" data-d="-1">−</button><b id="b-to">–</b><button class="round" data-b="to" data-d="1">+</button></div>
+        <div class="chips"><button class="chip" data-quick="30">30 min</button><button class="chip" data-quick="60">1 h</button><button class="chip" data-quick="120">2 h</button></div>
+        <div class="muted small" id="b-dur"></div>
+      </div>
+      <div class="card stack">
+        <div class="row"><h2 id="b-list-title">Rooms that fit</h2><div class="spacer"></div><span class="muted small" id="b-count"></span></div>
+        <div class="stack" id="b-list"></div>
+        <button class="btn wide" id="b-next" disabled>Pick a room</button>
+      </div>
+    </div>
+
+    <div class="card stack" id="book-details" hidden style="max-width:820px">
+      <div class="row"><button class="round" id="b-back" aria-label="Back">‹</button>
+        <div><div class="cap">Almost done</div><h2 id="b-summary"></h2></div></div>
+      <div class="fields">
+        <label class="f"><span class="cap">Your name</span><input id="b-name" autocomplete="name" maxlength="31" placeholder="e.g. Yousef"></label>
+        <label class="f"><span class="cap">Email · no account needed</span><input id="b-email" type="email" autocomplete="email" maxlength="63" placeholder="name@edu.aau.at"></label>
+      </div>
+      <div class="chips" style="max-width:320px"><button class="chip" data-domain="@edu.aau.at">@edu.aau.at</button><button class="chip" data-domain="@aau.at">@aau.at</button></div>
+      <div class="err" id="b-err" role="alert"></div>
+      <div class="muted small">Your name and email go encrypted to the building's screen only. They are never shown online.</div>
+      <button class="btn wide" id="b-send">Book now</button>
+    </div>
+
+    <div class="card done" id="book-done" hidden>
+      <div class="okc"><svg><use href="#i-check"/></svg></div>
+      <h1 class="title" id="d-title"></h1>
+      <div class="muted" id="d-sub"></div>
+      <div class="infob"><div class="icon-t" style="--c: var(--ghost)"><svg><use href="#i-bell"/></svg></div>
+        <div><b id="d-when"></b><div class="muted small">Just walk in, the room sensor checks you in. Otherwise the room is released for others.</div></div></div>
+      <button class="btn" id="d-ok" style="min-width:220px">Done</button>
+    </div>
+  </section>
+
+  <!-- ============ LOST & FOUND ============ -->
+  <section id="p-lf" hidden>
+    <div id="lf-home" class="col">
+      <div class="grid2" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))">
+        <button class="choice" data-lf="found" style="--c: var(--free)"><div class="icon-t" style="width:56px;height:56px"><svg><use href="#i-down"/></svg></div>
+          <h3>I found something</h3><span class="muted">Tell us the room and what it is, then hand it in at the Lost &amp; Found desk.</span><span class="go">Start ›</span></button>
+        <button class="choice" data-lf="lost" style="--c: var(--accent)"><div class="icon-t" style="width:56px;height:56px"><svg><use href="#i-eye"/></svg></div>
+          <h3>I lost something</h3><span class="muted">See if someone already handed it in, before you walk to the desk.</span><span class="go">Start ›</span></button>
+      </div>
+      <div class="card">
+        <div class="row"><h2>Recently handed in</h2><span class="tag" id="lf-count">0 items</span></div>
+        <div class="stack" id="lf-recent" style="margin-top:12px"></div>
+        <p class="muted small" style="margin:10px 0 0">Only the room, the type of item and the time are listed, for 7 days.</p>
+      </div>
+    </div>
+
+    <div id="lf-flow" class="col" hidden>
+      <div class="row"><button class="round" id="lf-back" aria-label="Back">‹</button>
+        <div><h2 id="lf-title"></h2><div class="muted small" id="lf-sub"></div></div><div class="spacer"></div>
+        <button class="btn" id="lf-go" disabled></button></div>
+      <div class="grid2" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))">
+        <div class="card"><div class="cap">Which room?</div><div class="tiles" id="lf-rooms" style="margin-top:12px"></div></div>
+        <div class="card"><div class="cap">What is it?</div><div class="tiles" id="lf-cats" style="margin-top:12px"></div></div>
+      </div>
+      <div class="card done" id="lf-result" hidden></div>
+    </div>
+  </section>
+
+  <div class="fullplan" id="fullplan" hidden>
+    <div class="row" style="flex-wrap:wrap"><button class="round" id="close-full" aria-label="Back">‹</button>
+      <div><div class="cap">Zentralgebäude</div><h2 style="font-size:22px">Floor 1</h2></div><div class="spacer"></div>
+      <div class="legend">
+        <span class="pill" style="--c: var(--free)">Free</span><span class="pill" style="--c: var(--busy)">In use</span>
+        <span class="pill" style="--c: var(--ghost)">No-show</span><span class="pill" style="--c: var(--booked)">Booked</span>
+        <span class="pill" style="--c: var(--offline)">Offline</span></div></div>
+    <div class="plan" id="plan-full"></div>
+    <div class="muted small" style="text-align:center">Tap a coloured room to book it. Outer walls: OpenStreetMap · room layout approximate.</div>
   </div>
 
   <footer>
-    <span>No cameras. Rooms only report “someone there or not”. Names and emails never leave the building.</span>
+    <span>No cameras. Rooms only report “someone there or not”.</span>
     <span>Map © OpenStreetMap contributors</span>
-    <span>Powered by Infineon PSOC™ Edge</span>
+    <span>Universität Klagenfurt · Infineon challenge “Smart Campus Room Assistant”</span>
   </footer>
-</div>
+</main>
 
+<script src="floorplan.js"></script>
 <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-/* ---- configuration ------------------------------------------------------
- * The web login is READ-ONLY (README §4), so it is fine that it's visible. */
+/* ---- configuration --------------------------------------------------------
+ * readUser: read-only (building state, lost & found). Visible in the source by design.
+ * sendUser: may only WRITE inhabitx/+/bookings/new + inhabitx/+/lostfound/new and
+ *           READ inhabitx/+/replies/#. Leave empty to keep booking in demo mode.
+ * See web/README.md for the messages. */
 const CONFIG = {
   building: 'Z',
-  brokerUrl: '',          // e.g. 'wss://<cluster>.s1.eu.hivemq.cloud:8884/mqtt'
-  username: 'web',
-  password: '',
+  brokerUrl: '',            // 'wss://<cluster>.s1.eu.hivemq.cloud:8884/mqtt'
+  readUser: 'web',  readPass: '',
+  sendUser: 'webbook', sendPass: '',
+  ghostMinutes: 10,         // must match IX_GHOST_RELEASE_S on the master
 };
 
-/* Room facts the building-state message doesn't carry (yet) */
-const ROOM_INFO = {
+const ROOM_INFO = {   // used when the building state doesn't carry seats/floor
   'Z.1.08': { seats: 24, floor: 1 }, 'Z.1.09': { seats: 8, floor: 1 }, 'Z.1.10': { seats: 6, floor: 1 },
   'Z.1.11': { seats: 10, floor: 1 }, 'Z.1.12': { seats: 4, floor: 1 },
 };
+const PLAN = [  // same floor plan as the screen, grid 432 x 240
+  ['Z.1.08', 0, 0, 282, 96], ['Z.1.09', 288, 0, 144, 96],
+  ['Z.1.10', 0, 140, 140, 100], ['Z.1.11', 146, 140, 140, 100], ['Z.1.12', 292, 140, 140, 100],
+];
 const CATS = { phone: 'Phone', keys: 'Keys', wallet: 'Wallet / cards', bag: 'Bag', bottle: 'Bottle',
   clothing: 'Clothing', electronics: 'Laptop / electronics', umbrella: 'Umbrella', glasses: 'Glasses', other: 'Other' };
-const STATE = {
-  free: ['Free', '--free'], booked: ['Booked', '--booked'], ghost: ['No-show', '--ghost'],
-  occupied: ['In use', '--busy'], offline: ['Offline', '--offline'],
-};
-const DAY_OPEN = 7, DAY_CLOSE = 22;
+const STATE = { free: ['Free', '--free'], booked: ['Booked', '--booked'], ghost: ['No-show', '--ghost'],
+  occupied: ['In use', '--busy'], offline: ['Offline', '--offline'] };
+const OPEN = 7 * 60, CLOSE = 22 * 60, SLOT = 15, MAXLEN = 240;
+const TITLES = { overview: 'Find a free room', campus: 'Universität Klagenfurt', book: 'Book a room', lf: 'Lost & Found' };
 
-/* ---- state ------------------------------------------------------------ */
-let building = null;      // last building-state message
-let receivedAt = 0;       // local ms when it arrived (for countdowns)
-let lostfound = null;     // last lost & found message
-let people = 1;
-let connState = 'connecting';
-
+/* ---- helpers --------------------------------------------------------------- */
 const $ = id => document.getElementById(id);
 const pad = n => String(n).padStart(2, '0');
-const hm = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+const fmt = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const info = r => ({ seats: r.seats ?? ROOM_INFO[r.id]?.seats, floor: r.floor ?? ROOM_INFO[r.id]?.floor ?? 1 });
+const info = r => ({ seats: r.seats ?? ROOM_INFO[r.id]?.seats ?? 0, floor: r.floor ?? ROOM_INFO[r.id]?.floor ?? 1 });
+const firstSlot = () => Math.max(OPEN, Math.floor(nowMin() / SLOT) * SLOT);
+const reqId = () => Math.random().toString(36).slice(2, 10);
 
+/* ---- state ----------------------------------------------------------------- */
+let building = null, receivedAt = 0, lostfound = { items: [] }, connState = 'connecting';
+let page = 'overview', people = 1;
+const bk = { mode: 'any', room: null, people: 1, from: 0, to: 0, step: 'pick' };
+const lf = { mode: null, room: null, cat: null };
+let sender = null;   // { send(topic, msg) -> Promise(reply) }
+
+/* ---- shell ----------------------------------------------------------------- */
+function show(p) {
+  page = p;
+  for (const k of Object.keys(TITLES)) $('p-' + k).hidden = k !== p;
+  document.querySelectorAll('.nav').forEach(b => b.classList.toggle('on', b.dataset.page === p));
+  $('title').textContent = TITLES[p];
+  if (p === 'campus') initMap();
+  if (p === 'book' && bk.step === 'done') resetBooking();
+  if (p === 'lf') lfHome();
+  renderAll();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('.nav').forEach(b => b.onclick = () => { if (b.dataset.page === 'book') resetBooking(); show(b.dataset.page); });
+
+function tickClock() {
+  const d = new Date();
+  $('time').textContent = fmt(d.getHours() * 60 + d.getMinutes());
+  $('date').textContent = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('greet').textContent = d.getHours() < 12 ? 'Good morning' : d.getHours() < 18 ? 'Good afternoon' : 'Good evening';
+}
+
+function renderConn() {
+  const m = { live: ['Live', '--free'], connecting: ['Connecting', '--ghost'], offline: ['Offline', '--busy'], demo: ['Demo', '--accent2'] }[connState];
+  $('conn').textContent = m[0];
+  $('conn').style.setProperty('--c', `var(${m[1]})`);
+  $('conn').classList.toggle('pulse', connState === 'live' || connState === 'demo');
+}
+
+/* ---- overview -------------------------------------------------------------- */
 function releaseLeft(r) {
   if (r.state !== 'ghost' || r.release_in_s == null) return null;
   return Math.max(0, r.release_in_s - Math.floor((Date.now() - receivedAt) / 1000));
 }
-
 function detail(r) {
   switch (r.state) {
-    case 'free':     return r.free_until ? 'until ' + r.free_until : 'rest of the day';
-    case 'booked':   return r.until ? 'booked until ' + r.until : 'booked';
+    case 'free': return r.free_until ? 'until ' + r.free_until : 'rest of the day';
+    case 'booked': return r.until ? 'booked until ' + r.until : 'booked';
     case 'occupied': return r.until ? 'until ' + r.until : 'walk-in';
-    case 'ghost': {
-      const s = releaseLeft(r);
-      return s == null ? 'may free up soon' : 'frees in ' + Math.floor(s / 60) + ':' + pad(s % 60);
-    }
+    case 'ghost': { const s = releaseLeft(r); return s == null ? 'may free up soon' : 'frees in ' + Math.floor(s / 60) + ':' + pad(s % 60); }
     default: return 'no sensor signal';
   }
 }
+const frac = m => Math.min(1, Math.max(0, (m - OPEN) / (CLOSE - OPEN)));
 
-/* "10:00" -> fraction of the 07-22 day */
-function dayFrac(t) {
-  const [h, m] = t.split(':').map(Number);
-  return Math.min(1, Math.max(0, (h + m / 60 - DAY_OPEN) / (DAY_CLOSE - DAY_OPEN)));
-}
-
-/* ---- render ----------------------------------------------------------- */
-function render() {
-  if (!building) return;
-  const rooms = building.rooms || [];
+function renderOverview() {
+  const rooms = building?.rooms || [];
   let free = 0, busy = 0, ghost = 0, off = 0;
   for (const r of rooms) {
-    if ((info(r).seats ?? 999) < people) continue;
-    if (r.state === 'free') free++;
-    else if (r.state === 'ghost') ghost++;
-    else if (r.state === 'offline') off++;
-    else busy++;
+    if (info(r).seats < people) continue;
+    if (r.state === 'free') free++; else if (r.state === 'ghost') ghost++; else if (r.state === 'offline') off++; else busy++;
   }
   $('free-n').textContent = free;
   $('free-text').textContent = free === 1 ? 'room free' : 'rooms free';
-  const age = Math.round((Date.now() - receivedAt) / 1000);
-  $('free-sub').textContent = (people > 1 ? `for ${people} people · ` : 'Building Z · ') +
-    (age < 5 ? 'updated just now' : `updated ${age < 60 ? age + ' s' : Math.round(age / 60) + ' min'} ago`);
+  $('free-sub').textContent = people > 1 ? `for ${people} people · floor 1` : 'floor 1 · Zentralgebäude';
   $('s-busy').textContent = busy + ' in use';
   $('s-ghost').textContent = ghost + ' may free up';
   $('s-off').textContent = off + ' offline';
   $('people').textContent = people;
+  const age = Math.round((Date.now() - receivedAt) / 1000);
+  $('updated').textContent = !building ? '–' : age < 5 ? 'just now' : age < 60 ? age + ' s ago' : Math.round(age / 60) + ' min ago';
 
-  const now = new Date(), nowFrac = dayFrac(hm(now));
+  const nf = frac(nowMin());
   $('rooms').innerHTML = rooms.map(r => {
-    const i = info(r), [label, color] = STATE[r.state] || STATE.offline;
-    const fits = (i.seats ?? 999) >= people;
-    const short = r.id.split('.').pop();
-    const slots = (r.slots || []).map(([a, b]) =>
-      `<span style="left:${dayFrac(a) * 100}%;width:${Math.max(1, (dayFrac(b) - dayFrac(a)) * 100)}%"></span>`).join('');
+    const i = info(r), [label, color] = STATE[r.state] || STATE.offline, fits = i.seats >= people;
+    const slots = (r.slots || []).map(([a, b]) => `<span style="left:${frac(toMin(a)) * 100}%;width:${Math.max(1, (frac(toMin(b)) - frac(toMin(a))) * 100)}%"></span>`).join('');
     return `<div class="room${fits ? '' : ' dim'}">
-      <div class="tile" style="--c: var(${color})">${esc(short)}</div>
+      <div class="rtile" style="--c: var(${color})">${esc(r.id.split('.').pop())}</div>
       <div class="id">${esc(r.id)}</div>
-      <div class="right"><span class="pill" style="--c: var(${color})">${label}</span>
+      <div class="right"><div class="rcol"><span class="pill" style="--c: var(${color})">${label}</span>
         <span class="detail${r.state === 'ghost' ? ' warn' : ''}">${fits ? esc(detail(r)) : 'too small for ' + people}</span></div>
-      <div class="meta">${i.seats ? i.seats + ' seats · ' : ''}floor ${i.floor}</div>
-      ${r.slots ? `<div class="bar" title="Today 07:00–22:00">${slots}<em style="left:${nowFrac * 100}%"></em></div>` : ''}
+        ${fits && r.state === 'free' ? `<button class="btn book" data-bookroom="${esc(r.id)}">Book</button>` : ''}</div>
+      <div class="meta">${i.seats} seats · floor ${i.floor}</div>
+      ${r.slots ? `<div class="bar">${slots}<em style="left:${nf * 100}%"></em></div>` : ''}
     </div>`;
-  }).join('') || '<div class="empty">No rooms reported yet.</div>';
+  }).join('') || '<div class="muted" style="padding:16px 0">No rooms reported yet.</div>';
 
-  if (zTooltip) zTooltip.setContent(`Zentralgebäude · <span style="color:var(--free)">${free} free</span>`);
+  renderPlan(rooms);
 }
+document.querySelectorAll('[data-people]').forEach(b => b.onclick = () => { people = Math.min(60, Math.max(1, people + +b.dataset.people)); renderAll(); });
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-bookroom],[data-bookroom-plan]');
+  if (!b) return;
+  $('fullplan').hidden = true;
+  resetBooking(b.dataset.bookroom || b.dataset.bookroomPlan, people);
+  show('book');
+});
 
-function renderConn() {
-  const p = $('conn');
-  const map = { live: ['Live', '--free'], connecting: ['Connecting', '--ghost'], offline: ['Offline', '--busy'], demo: ['Demo', '--accent2'] };
-  const [t, c] = map[connState];
-  p.textContent = t;
-  p.style.setProperty('--c', `var(${c})`);
-  p.classList.toggle('live', connState === 'live' || connState === 'demo');
+/* the same plan as the screen: real outline, approximate interior (floorplan.js) */
+const planBuilt = {};
+function buildPlan(el, view, big) {
+  const F = FLOORPLAN, cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const [vx, vy, vw, vh] = view, fs = big ? 1.7 : 1.5;
+  const labels = F.rooms.filter(r => r.kind !== 'live').map(r =>
+    `<text x="${r.x + r.w / 2}" y="${r.y + r.h / 2}" fill="#56627C" font-size="${fs}">${r.kind === 'room' ? r.id.slice(2) : r.id}</text>`).join('');
+  const live = F.rooms.filter(r => r.kind === 'live').map(r =>
+    `<g class="live" data-bookroom-plan="${r.id}"><rect x="${r.x + .35}" y="${r.y + .35}" width="${r.w - .7}" height="${r.h - .7}" rx=".4"
+      fill-opacity=".35" stroke-width=".35"/><text x="${r.x + r.w / 2}" y="${r.y + r.h / 2}" fill="#fff" font-size="${fs}">${big ? r.id : r.id.slice(2)}</text></g>`).join('');
+  const [hx, hy] = F.here;
+  el.innerHTML = `<svg viewBox="${vx} ${vy} ${vw} ${vh}" role="img" aria-label="Floor 1 plan with live room states">
+    <rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="${cssVar('--card')}"/>${F.svg}${labels}${live}
+    <circle class="here-dot" cx="${hx}" cy="${hy}" r=".9" fill="#3B7BFF" stroke="#3B7BFF"/>
+    <circle cx="${hx}" cy="${hy}" r=".9" fill="#3B7BFF" stroke="#fff" stroke-width=".3"/>
+    <text x="${hx + 1.6}" y="${hy}" fill="#3B7BFF" font-size="${fs}" style="text-anchor:start">You are here</text></svg>`;
 }
-
-/* ---- lost & found ----------------------------------------------------- */
-function fillLostFoundSelects() {
-  const ids = (building?.rooms || []).map(r => r.id);
-  const sel = $('lf-room');
-  if (sel.options.length - 1 !== ids.length) {
-    sel.innerHTML = '<option value="">Not sure</option>' + ids.map(id => `<option>${esc(id)}</option>`).join('');
+function paintPlan(el, rooms) {
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  for (const g of el.querySelectorAll('.live')) {
+    const r = rooms.find(r => r.id === g.dataset.bookroomPlan);
+    const c = cssVar((STATE[r?.state] || STATE.offline)[1]);
+    g.querySelector('rect').setAttribute('fill', c);
+    g.querySelector('rect').setAttribute('stroke', c);
   }
 }
-$('lf-cat').innerHTML += Object.entries(CATS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
-
-function whenText(ts) {
-  const d = new Date(ts * 1000), now = new Date();
-  if (d.toDateString() === now.toDateString()) return 'today ' + hm(d);
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric' }) + ', ' + hm(d);
+function renderPlan(rooms) {
+  if (typeof FLOORPLAN === 'undefined') return;
+  if (!planBuilt.card) { buildPlan($('plan'), FLOORPLAN.view, false); planBuilt.card = true; }
+  paintPlan($('plan'), rooms);
+  if (!$('fullplan').hidden) paintPlan($('plan-full'), rooms);
 }
-
-$('lf-go').onclick = () => {
-  const room = $('lf-room').value, cat = $('lf-cat').value, out = $('lf-res');
-  if (!lostfound) {
-    out.innerHTML = '<div class="empty">The lost &amp; found list isn’t online yet. Please ask at the desk.</div>';
-    return;
-  }
-  const hits = (lostfound.items || [])
-    .filter(i => (!room || i.room === room) && (!cat || i.cat === cat))
-    .sort((a, b) => b.ts - a.ts);
-  out.innerHTML = hits.length
-    ? `<div class="res-title">Good news: ${hits.length === 1 ? '1 possible match' : hits.length + ' possible matches'}</div>` +
-      hits.map(i => `<div class="item"><div class="ic">✓</div><div class="grow">${esc(CATS[i.cat] || i.cat)}
-        <small>found in ${esc(i.room)}</small></div><time>${whenText(i.ts)}</time></div>`).join('') +
-      '<div class="note" style="margin:4px 0 0">Ask at the Lost &amp; Found desk at the main entrance.</div>'
-    : `<div class="res-title">Nothing handed in yet</div>
-       <div class="note" style="margin:0">Items show up here as soon as someone registers them at the screen, so check again later.</div>`;
+$('open-full').onclick = () => {
+  if (!planBuilt.full) { buildPlan($('plan-full'), FLOORPLAN.full, true); planBuilt.full = true; }
+  $('fullplan').hidden = false;
+  renderPlan(building?.rooms || []);
 };
+$('close-full').onclick = () => $('fullplan').hidden = true;
+$('plan').onclick = e => { if (!e.target.closest('.live')) $('open-full').click(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('fullplan').hidden = true; });
 
-/* ---- map -------------------------------------------------------------- */
+/* ---- campus map ------------------------------------------------------------ */
 const Z_OUTLINE = [[46.616200,14.265782],[46.616138,14.265792],[46.616137,14.265776],[46.616109,14.265410],[46.616108,14.265404],[46.616174,14.265393],[46.616172,14.265369],[46.616170,14.265346],[46.616148,14.265076],[46.616139,14.264961],[46.616137,14.264943],[46.616088,14.264951],[46.616066,14.264697],[46.616113,14.264688],[46.616103,14.264566],[46.616101,14.264543],[46.616100,14.264520],[46.616032,14.264532],[46.616031,14.264524],[46.616029,14.264503],[46.616001,14.264143],[46.616160,14.264117],[46.616178,14.264114],[46.616194,14.264111],[46.616271,14.264099],[46.616300,14.264473],[46.616349,14.264465],[46.616380,14.264460],[46.616381,14.264477],[46.616382,14.264487],[46.616384,14.264517],[46.616412,14.264880],[46.616413,14.264894],[46.616415,14.264913],[46.616417,14.264940],[46.616445,14.265301],[46.616447,14.265322],[46.616447,14.265330],[46.616450,14.265359],[46.616424,14.265363],[46.616379,14.265371],[46.616386,14.265450],[46.616408,14.265732],[46.616409,14.265747],[46.616397,14.265749],[46.616293,14.265766],[46.616200,14.265782]];
-let zTooltip = null;
-try {
-  const map = L.map('map', { zoomControl: false, attributionControl: true, scrollWheelZoom: false })
-    .setView([46.61625, 14.26505], 17);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  }).addTo(map);
+let map = null, zTip = null;
+function initMap() {
+  if (map || typeof L === 'undefined') { if (map) setTimeout(() => map.invalidateSize(), 50); return; }
+  map = L.map('map', { zoomControl: false, scrollWheelZoom: false }).setView([46.61620, 14.26510], 17);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   const z = L.polygon(Z_OUTLINE, { color: '#78A5FF', weight: 2, fillColor: '#3B7BFF', fillOpacity: .55 }).addTo(map);
-  zTooltip = L.tooltip({ permanent: true, direction: 'top', className: 'zlabel', offset: [0, -14] })
-    .setLatLng(z.getBounds().getCenter()).setContent('Zentralgebäude').addTo(map);
-} catch (e) { $('map').textContent = 'Map unavailable'; }
-
-/* ---- data sources ----------------------------------------------------- */
-function onBuilding(msg) {
-  building = msg;
-  receivedAt = Date.now();
-  fillLostFoundSelects();
-  render();
+  z.on('click', () => show('overview'));
+  zTip = L.tooltip({ permanent: true, direction: 'top', className: 'zlabel', offset: [0, -16] })
+    .setLatLng(z.getBounds().getCenter()).addTo(map);
+  renderCampus();
+}
+function renderCampus() {
+  if (!zTip) return;
+  const free = (building?.rooms || []).filter(r => r.state === 'free').length;
+  zTip.setContent(`<div style="color:#3B7BFF;font-size:12px">You are here</div>Zentralgebäude<br><span style="color:#22C55E">${free} ${free === 1 ? 'room' : 'rooms'} free now</span>`);
 }
 
-function connect() {
-  const client = mqtt.connect(CONFIG.brokerUrl, {
-    username: CONFIG.username, password: CONFIG.password,
-    reconnectPeriod: 3000, connectTimeout: 8000, clean: true,
-  });
+/* ---- booking --------------------------------------------------------------- */
+function resetBooking(room = null, ppl = 1) {
+  Object.assign(bk, { mode: room ? 'specific' : 'any', room, people: ppl, from: firstSlot(), to: firstSlot() + 60, step: 'pick' });
+  $('b-name').value = ''; $('b-email').value = ''; $('b-err').textContent = '';
+}
+function clampTimes() {
+  const dur = bk.to - bk.from;
+  bk.from = Math.min(Math.max(bk.from, firstSlot()), CLOSE - SLOT);
+  bk.to = Math.min(bk.from + Math.max(SLOT, dur), bk.from + MAXLEN, CLOSE);
+}
+/* same rules as ix_room_check() on the master; the master has the final word */
+function check(r) {
+  const i = info(r);
+  if (i.seats < bk.people) return ['Only ' + i.seats + ' seats', false];
+  for (const [a, b] of r.slots || []) if (toMin(a) < bk.to && bk.from < toMin(b)) return [`Booked ${a} – ${b}`, false];
+  if (bk.from <= nowMin()) {
+    if (r.state === 'offline') return ['Sensor offline', false];
+    if (r.state !== 'free') return ['In use right now', false];
+  }
+  return ['Available', true];
+}
+function renderBook() {
+  $('book-pick').hidden = bk.step !== 'pick';
+  $('book-details').hidden = bk.step !== 'details';
+  $('book-done').hidden = bk.step !== 'done';
+  if (bk.step !== 'pick') return;
+  clampTimes();
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === bk.mode));
+  $('b-people').textContent = bk.people;
+  $('b-from').textContent = bk.from <= nowMin() ? 'Now' : fmt(bk.from);
+  $('b-to').textContent = fmt(bk.to);
+  const dur = bk.to - bk.from;
+  $('b-dur').textContent = (dur >= 60 ? Math.floor(dur / 60) + ' h' + (dur % 60 ? ' ' + dur % 60 + ' min' : '') : dur + ' min') + ' · today · max 4 h';
+  document.querySelectorAll('[data-quick]').forEach(b => b.classList.toggle('sel', +b.dataset.quick === dur));
+
+  const rooms = building?.rooms || [];
+  const closed = firstSlot() > CLOSE - SLOT;
+  const all = rooms.map(r => ({ r, c: check(r) }));
+  const fit = all.filter(x => x.c[1]).sort((a, b) => info(a.r).seats - info(b.r).seats);
+  if (bk.mode === 'any' && !fit.some(x => x.r.id === bk.room)) bk.room = fit[0]?.r.id ?? null;
+  const list = bk.mode === 'any' ? fit : all;
+  $('b-list-title').textContent = bk.mode === 'any' ? 'Rooms that fit' : 'Pick a room';
+  $('b-count').textContent = `${fit.length} of ${rooms.length} available`;
+  $('b-list').innerHTML = closed ? '<div class="muted">Booking is closed for today (07:00 – 22:00).</div>'
+    : list.map(({ r, c }, i) => {
+      const color = c[1] ? '--free' : '--offline';
+      return `<button class="pick${r.id === bk.room ? ' sel' : ''}" data-pick="${esc(r.id)}" ${c[1] ? '' : 'disabled'}>
+        <div class="rtile" style="--c: var(${color});grid-row:auto">${esc(r.id.split('.').pop())}</div>
+        <div class="grow"><b>${esc(r.id)}</b><small>${info(r).seats} seats</small></div>
+        ${bk.mode === 'any' && i === 0 ? '<span class="pill" style="--c: var(--accent)">Best fit</span>' : `<span class="why${c[1] ? ' ok' : ''}">${esc(c[0])}</span>`}
+      </button>`;
+    }).join('') || '<div class="muted">No room fits. Try a later start, a shorter slot or a smaller group.</div>';
+  const ok = !closed && bk.room && check(rooms.find(r => r.id === bk.room) || {}).at(1);
+  $('b-next').disabled = !ok;
+  $('b-next').textContent = ok ? `Continue with ${bk.room} ›` : 'Pick a room';
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { bk.mode = b.dataset.mode; renderBook(); });
+document.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
+  const d = +b.dataset.d;
+  if (b.dataset.b === 'people') bk.people = Math.min(60, Math.max(1, bk.people + d));
+  if (b.dataset.b === 'from') { const dur = bk.to - bk.from; bk.from += d * SLOT; bk.to = bk.from + dur; }
+  if (b.dataset.b === 'to') { const t = bk.to + d * SLOT; if (t >= bk.from + SLOT && t <= bk.from + MAXLEN && t <= CLOSE) bk.to = t; }
+  renderBook();
+});
+document.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => { bk.to = bk.from + +b.dataset.quick; renderBook(); });
+$('b-list').onclick = e => { const p = e.target.closest('[data-pick]'); if (p && !p.disabled) { bk.room = p.dataset.pick; renderBook(); } };
+$('b-next').onclick = () => {
+  bk.step = 'details';
+  $('b-summary').textContent = `${bk.room} · Today ${fmt(bk.from)} – ${fmt(bk.to)} · ${bk.people} ${bk.people === 1 ? 'person' : 'people'}`;
+  renderBook(); $('b-name').focus();
+};
+$('b-back').onclick = () => { bk.step = 'pick'; renderBook(); };
+document.querySelectorAll('[data-domain]').forEach(b => b.onclick = () => {
+  const v = $('b-email').value; $('b-email').value = (v.includes('@') ? v.slice(0, v.indexOf('@')) : v) + b.dataset.domain; $('b-email').focus();
+});
+['b-name', 'b-email'].forEach(id => $(id).oninput = () => $('b-err').textContent = '');
+$('b-name').onkeydown = e => { if (e.key === 'Enter') $('b-email').focus(); };
+$('b-email').onkeydown = e => { if (e.key === 'Enter') $('b-send').click(); };
+
+const ERRORS = { name: 'Please enter your name.', email: 'Please enter a valid email address.', time: 'Pick a time today, up to 4 hours long.',
+  seats: 'This room is too small for your group.', overlap: 'Someone else has booked this room then.', busy: 'This room is in use right now. Pick a later start.',
+  limit: 'This email already has 2 active bookings.', full: 'No space for more bookings right now.', timeout: 'The building didn’t answer. Please try again or book at the screen.' };
+
+$('b-send').onclick = async () => {
+  const name = $('b-name').value.trim(), email = $('b-email').value.trim().toLowerCase();
+  if (!name) return $('b-err').textContent = ERRORS.name;
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return $('b-err').textContent = ERRORS.email;
+  $('b-send').disabled = true; $('b-send').textContent = 'Booking…';
+  const reply = await sender.send('bookings/new', { room: bk.room, from: fmt(bk.from), to: fmt(bk.to), people: bk.people, name, email });
+  $('b-send').disabled = false; $('b-send').textContent = 'Book now';
+  if (!reply.ok) return $('b-err').textContent = ERRORS[reply.error] || ERRORS.timeout;
+  bk.step = 'done';
+  $('d-title').textContent = bk.room + ' is yours';
+  $('d-sub').textContent = $('b-summary').textContent;
+  const start = Math.max(bk.from, nowMin());
+  $('d-when').textContent = `Be there within ${CONFIG.ghostMinutes} minutes of ${fmt(start)}`;
+  renderBook();
+};
+$('d-ok').onclick = () => { resetBooking(); show('overview'); };
+
+/* ---- lost & found ---------------------------------------------------------- */
+function whenText(ts) {
+  const d = new Date(ts * 1000), n = new Date();
+  return d.toDateString() === n.toDateString() ? 'today ' + fmt(d.getHours() * 60 + d.getMinutes())
+    : d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric' }) + ', ' + fmt(d.getHours() * 60 + d.getMinutes());
+}
+const itemHtml = i => `<div class="item"><div class="icon-t" style="--c: var(--free)"><svg><use href="#i-box"/></svg></div>
+  <div class="grow">${esc(CATS[i.cat] || i.cat)}<small>found in ${esc(i.room)}${i.online ? ' · reported online, not yet at the desk' : ''}</small></div><time>${whenText(i.ts)}</time></div>`;
+
+function lfHome() { lf.mode = null; $('lf-home').hidden = false; $('lf-flow').hidden = true; renderLf(); }
+function renderLf() {
+  const items = [...(lostfound.items || [])].sort((a, b) => b.ts - a.ts);
+  $('lf-count').textContent = items.length === 1 ? '1 item' : items.length + ' items';
+  $('lf-recent').innerHTML = items.slice(0, 3).map(itemHtml).join('') || '<div class="muted">Nothing handed in this week.</div>';
+}
+function lfOpen(mode) {
+  Object.assign(lf, { mode, room: null, cat: null });
+  $('lf-home').hidden = true; $('lf-flow').hidden = false; $('lf-result').hidden = true;
+  $('lf-title').textContent = mode === 'found' ? 'I found something' : 'I lost something';
+  $('lf-sub').textContent = mode === 'found' ? 'Where was it, and what is it?' : 'Where did you lose it, and what is it?';
+  $('lf-go').textContent = mode === 'found' ? 'Register item ✓' : 'Search ›';
+  const rooms = (building?.rooms || []).map(r => r.id);
+  $('lf-rooms').innerHTML = (mode === 'lost' ? ['*'] : []).concat(rooms)
+    .map(id => `<button class="tile-btn" data-lfroom="${esc(id)}">${id === '*' ? 'Not sure' : esc(id)}</button>`).join('');
+  $('lf-cats').innerHTML = Object.entries(CATS).concat(mode === 'lost' ? [['*', 'Any type']] : [])
+    .map(([k, v]) => `<button class="tile-btn" data-lfcat="${k}">${v}</button>`).join('');
+  lfSel();
+}
+function lfSel() {
+  document.querySelectorAll('[data-lfroom]').forEach(b => b.classList.toggle('sel', b.dataset.lfroom === lf.room));
+  document.querySelectorAll('[data-lfcat]').forEach(b => b.classList.toggle('sel', b.dataset.lfcat === lf.cat));
+  $('lf-go').disabled = !(lf.room && lf.cat);
+}
+document.querySelectorAll('[data-lf]').forEach(b => b.onclick = () => lfOpen(b.dataset.lf));
+$('lf-back').onclick = lfHome;
+$('lf-rooms').onclick = e => { const b = e.target.closest('[data-lfroom]'); if (b) { lf.room = b.dataset.lfroom; lfSel(); } };
+$('lf-cats').onclick = e => { const b = e.target.closest('[data-lfcat]'); if (b) { lf.cat = b.dataset.lfcat; lfSel(); } };
+
+function lfResult(html) { const r = $('lf-result'); r.innerHTML = html; r.hidden = false; r.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+$('lf-go').onclick = async () => {
+  if (lf.mode === 'found') {
+    $('lf-go').disabled = true;
+    const reply = await sender.send('lostfound/new', { room: lf.room, cat: lf.cat });
+    $('lf-go').disabled = false;
+    lfResult(reply.ok
+      ? `<div class="okc"><svg><use href="#i-check"/></svg></div><h1 class="title">Thank you!</h1>
+         <div style="width:min(520px,100%)">${itemHtml({ room: lf.room, cat: lf.cat, ts: Date.now() / 1000, online: true })}</div>
+         <div class="muted">Please bring it to the Lost &amp; Found desk at the main entrance. The owner can now see that it was found.</div>
+         <button class="btn" onclick="lfHome()" style="min-width:200px">Done</button>`
+      : `<div class="okc warn"><svg><use href="#i-warn"/></svg></div><h1 class="title">That didn’t work</h1>
+         <div class="muted">${ERRORS[reply.error] || ERRORS.timeout}</div>`);
+    return;
+  }
+  const hits = (lostfound.items || []).filter(i => (lf.room === '*' || i.room === lf.room) && (lf.cat === '*' || i.cat === lf.cat)).sort((a, b) => b.ts - a.ts);
+  lfResult(hits.length
+    ? `<div class="okc"><svg><use href="#i-check"/></svg></div><h1 class="title">Good news: ${hits.length === 1 ? '1 possible match' : hits.length + ' possible matches'}</h1>
+       <div class="stack" style="width:min(560px,100%)">${hits.map(itemHtml).join('')}</div>
+       <div class="muted">Ask at the Lost &amp; Found desk at the main entrance.</div>
+       <button class="btn" onclick="lfHome()" style="min-width:200px">Done</button>`
+    : `<div class="icon-t" style="--c: var(--muted);width:64px;height:64px"><svg><use href="#i-eye"/></svg></div><h1 class="title">Nothing handed in yet</h1>
+       <div class="muted">Items show up here as soon as someone registers them, so check again later.</div>`);
+};
+
+/* ---- render loop ----------------------------------------------------------- */
+function renderAll() {
+  tickClock();
+  if (page === 'overview') renderOverview();
+  if (page === 'campus') renderCampus();
+  if (page === 'book' && bk.step === 'pick') renderBook();
+  if (page === 'lf' && !lf.mode) renderLf();
+}
+function onBuilding(msg) { building = msg; receivedAt = Date.now(); renderAll(); }
+setInterval(renderAll, 1000);
+addEventListener('resize', () => page === 'overview' && renderOverview());
+
+/* ---- live: MQTT ------------------------------------------------------------ */
+function connectLive() {
   const base = `inhabitx/${CONFIG.building}/`;
-  client.on('connect', () => {
-    connState = 'live'; renderConn();
-    client.subscribe([base + 'rooms', base + 'lostfound']);
+  const reader = mqtt.connect(CONFIG.brokerUrl, { username: CONFIG.readUser, password: CONFIG.readPass, reconnectPeriod: 3000, connectTimeout: 8000 });
+  reader.on('connect', () => { connState = 'live'; renderConn(); reader.subscribe([base + 'rooms', base + 'lostfound']); });
+  reader.on('reconnect', () => { connState = 'connecting'; renderConn(); });
+  reader.on('offline', () => { connState = 'offline'; renderConn(); });
+  reader.on('message', (topic, payload) => {
+    let m; try { m = JSON.parse(payload.toString()); } catch { return; }
+    if (topic === base + 'rooms') onBuilding(m);
+    else if (topic === base + 'lostfound') { lostfound = m; renderAll(); }
   });
-  client.on('reconnect', () => { connState = 'connecting'; renderConn(); });
-  client.on('offline', () => { connState = 'offline'; renderConn(); });
-  client.on('error', () => { connState = 'offline'; renderConn(); });
-  client.on('message', (topic, payload) => {
-    let msg;
-    try { msg = JSON.parse(payload.toString()); } catch { return; }
-    if (topic === base + 'rooms') onBuilding(msg);
-    else if (topic === base + 'lostfound') lostfound = msg;
+
+  if (!CONFIG.sendUser || !CONFIG.sendPass) { sender = demoSender(); return; }
+  const writer = mqtt.connect(CONFIG.brokerUrl, { username: CONFIG.sendUser, password: CONFIG.sendPass, reconnectPeriod: 3000 });
+  const waiting = new Map();
+  writer.on('connect', () => writer.subscribe(base + 'replies/#'));
+  writer.on('message', (topic, payload) => {
+    const id = topic.split('/').pop(), cb = waiting.get(id);
+    if (!cb) return;
+    waiting.delete(id);
+    try { cb(JSON.parse(payload.toString())); } catch { cb({ ok: false }); }
   });
+  sender = { send: (what, msg) => new Promise(res => {
+    const id = reqId();
+    waiting.set(id, res);
+    writer.publish(base + what, JSON.stringify({ req: id, ...msg }), { qos: 1 });
+    setTimeout(() => { if (waiting.delete(id)) res({ ok: false, error: 'timeout' }); }, 8000);
+  }) };
 }
 
-/* Demo: looks like the master's simulator (Z.1.09 is a no-show that frees itself) */
-function demo() {
-  $('demo').style.display = 'block';
-  connState = 'demo'; renderConn();
-  const now = new Date(), t = s => s;
-  const hh = h => pad(h) + ':00';
-  const h = now.getHours();
-  let ghostLeft = 30, phase = 0;
-  const state = () => ({
-    ts: Math.floor(Date.now() / 1000),
-    rooms: [
-      { id: 'Z.1.08', state: 'occupied', until: hh(h + 1), slots: [[hh(h), hh(h + 1)]] },
-      phase === 0
-        ? { id: 'Z.1.09', state: 'ghost', release_in_s: ghostLeft, slots: [[hm(now), hh(h + 1)]] }
-        : { id: 'Z.1.09', state: 'free', slots: [] },
-      { id: 'Z.1.10', state: 'free', free_until: hh(h + 2), slots: [[hh(h + 2), hh(h + 3)]] },
-      { id: 'Z.1.11', state: 'occupied', slots: [] },
-      { id: 'Z.1.12', state: 'offline' },
-    ],
-  });
-  onBuilding(state());
-  setInterval(() => {
-    ghostLeft -= 5;
-    if (ghostLeft <= 0 && phase === 0) phase = 1;
-    onBuilding(state());
+/* ---- demo: a building that behaves like the master's simulator ----------- */
+function demoSender() {
+  return { send: (what, m) => new Promise(res => setTimeout(() => {
+    if (what === 'lostfound/new') {
+      lostfound.items.push({ room: m.room, cat: m.cat, ts: Math.floor(Date.now() / 1000), online: true });
+      return res({ ok: true });
+    }
+    const mine = Number(sessionStorage.getItem('demo-' + m.email) || 0);
+    if (mine >= 2) return res({ ok: false, error: 'limit' });
+    const r = demoRooms.find(r => r.id === m.room);
+    if (!r) return res({ ok: false, error: 'time' });
+    bk.room = m.room;
+    if (check(r)[0] !== 'Available') return res({ ok: false, error: 'overlap' });
+    sessionStorage.setItem('demo-' + m.email, mine + 1);
+    r.slots = (r.slots || []).concat([[m.from, m.to]]);
+    if (toMin(m.from) <= nowMin()) Object.assign(r, { state: 'ghost', release_in_s: CONFIG.ghostMinutes * 60, until: m.to });
+    pushDemo();
+    res({ ok: true });
+  }, 600)) };
+}
+let demoRooms = [];
+function pushDemo() { onBuilding({ ts: Math.floor(Date.now() / 1000), rooms: demoRooms.map(r => ({ ...r })) }); }
+function startDemo() {
+  $('demo').hidden = false; connState = 'demo'; renderConn();
+  const h = Math.floor(nowMin() / 60), hh = x => pad(Math.min(22, x)) + ':00';
+  demoRooms = [
+    { id: 'Z.1.08', state: 'occupied', until: hh(h + 1), slots: [[hh(h), hh(h + 1)]] },
+    { id: 'Z.1.09', state: 'ghost', release_in_s: 40, until: hh(h + 1), slots: [[fmt(firstSlot()), hh(h + 1)]] },
+    { id: 'Z.1.10', state: 'free', free_until: hh(h + 2), slots: [[hh(h + 2), hh(h + 3)]] },
+    { id: 'Z.1.11', state: 'occupied', slots: [] },
+    { id: 'Z.1.12', state: 'offline' },
+  ];
+  const t = Math.floor(Date.now() / 1000);
+  lostfound = { items: [{ room: 'Z.1.10', cat: 'umbrella', ts: t - 3600 }, { room: 'Z.1.08', cat: 'phone', ts: t - 2 * 86400 }] };
+  pushDemo();
+  setInterval(() => {   // countdowns run out like on the master
+    for (const r of demoRooms) if (r.state === 'ghost') {
+      r.release_in_s -= 5;
+      if (r.release_in_s <= 0) { r.state = 'free'; delete r.release_in_s; r.slots = []; }
+    }
+    pushDemo();
   }, 5000);
-  lostfound = { ts: Math.floor(Date.now() / 1000), items: [
-    { room: 'Z.1.10', cat: 'umbrella', ts: Math.floor(Date.now() / 1000) - 3600 },
-    { room: 'Z.1.08', cat: 'phone', ts: Math.floor(Date.now() / 1000) - 2 * 86400 },
-  ] };
+  sender = demoSender();
 }
 
-$('minus').onclick = () => { people = Math.max(1, people - 1); render(); };
-$('plus').onclick = () => { people = Math.min(60, people + 1); render(); };
-setInterval(render, 1000);   // countdowns + "updated x s ago"
-
-const forceDemo = new URLSearchParams(location.search).has('demo');
-if (!CONFIG.brokerUrl || forceDemo || typeof mqtt === 'undefined') demo();
-else { renderConn(); connect(); }
+/* ---- start ----------------------------------------------------------------- */
+resetBooking();
+const params = new URLSearchParams(location.search);
+if (!CONFIG.brokerUrl || params.has('demo') || typeof mqtt === 'undefined') startDemo();
+else { renderConn(); connectLive(); }
+show(['overview', 'campus', 'book', 'lf'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'overview');
 </script>
 </body>
 </html>

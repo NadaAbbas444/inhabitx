@@ -10,19 +10,6 @@
 #define COL_B_W   (UI_PAGE_W - COL_B_X)
 #define HERO_H    160
 
-/* ---- floor plan (grid 432 x 240, scaled to the card) ------------------ */
-typedef struct { const char *id; int16_t x, y, w, h; } plan_room_t;
-static const plan_room_t s_plan[] = {
-    { "Z.1.08",   0,   0, 282,  96 },
-    { "Z.1.09", 288,   0, 144,  96 },
-    { "Z.1.10",   0, 140, 140, 100 },
-    { "Z.1.11", 146, 140, 140, 100 },
-    { "Z.1.12", 292, 140, 140, 100 },
-};
-#define PLAN_N ((int)(sizeof s_plan / sizeof s_plan[0]))
-#define PLAN_CORR_Y 102
-#define PLAN_CORR_H 32
-
 /* ---- state ------------------------------------------------------------ */
 static uint8_t s_people = 1;
 
@@ -37,7 +24,7 @@ static int   s_nrows;
 static lv_obj_t *s_people_lbl;
 
 typedef struct { int room; lv_obj_t *tile, *lbl; } plan_tile_t;
-static plan_tile_t s_ptiles[PLAN_N];
+static plan_tile_t s_ptiles[IX_MAX_ROOMS];
 static int s_nptiles;
 
 static lv_obj_t *s_chart, *s_occ_val;
@@ -260,6 +247,109 @@ static void refresh_rooms(time_t now, const ix_status_t *st)
 
 static void plan_cb(lv_event_t *e) { ui_room_drawer((int)(intptr_t)lv_event_get_user_data(e)); }
 
+/* Draws live room tiles, faint labels and the "you are here" dot on a plan image. */
+static int plan_overlay(lv_obj_t *img, const ui_plan_room_t *rooms, int count, lv_point_t here,
+                        plan_tile_t *tiles, bool big)
+{
+    int n = 0;
+    for (int i = 0; i < count; i++) {
+        const ui_plan_room_t *pr = &rooms[i];
+        int room = pr->kind == UI_PLAN_LIVE ? ix_room_find(pr->id) : -1;
+        if (pr->kind == UI_PLAN_LIVE && room >= 0) {
+            plan_tile_t *t = &tiles[n++];
+            t->room = room;
+            t->tile = ui_box(img);
+            lv_obj_set_pos(t->tile, pr->x + 2, pr->y + 2);
+            lv_obj_set_size(t->tile, pr->w - 3, pr->h - 3);
+            lv_obj_set_style_radius(t->tile, 3, 0);
+            lv_obj_set_style_bg_opa(t->tile, 90, 0);
+            lv_obj_set_style_border_width(t->tile, 2, 0);
+            lv_obj_set_style_border_opa(t->tile, 200, 0);
+            lv_obj_add_flag(t->tile, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_add_event_cb(t->tile, plan_cb, LV_EVENT_CLICKED, (void *)(intptr_t)room);
+            t->lbl = ui_label(t->tile, big ? pr->id : pr->id + 2, big ? ui_f_label : ui_f_caption, UI_C_TEXT);
+            lv_obj_center(t->lbl);
+        } else if (pr->w >= 22) {
+            lv_obj_t *l = ui_label(img, pr->kind == UI_PLAN_ROOM ? pr->id + 2 : pr->id,
+                                   big ? ui_f_small : ui_f_caption, UI_C_FAINT);
+            lv_obj_update_layout(l);
+            lv_obj_set_pos(l, pr->x + (pr->w - lv_obj_get_width(l)) / 2, pr->y + (pr->h - lv_obj_get_height(l)) / 2);
+        }
+    }
+
+    lv_obj_t *dot = ui_box(img);
+    lv_obj_set_size(dot, 12, 12);
+    lv_obj_set_pos(dot, here.x - 6, here.y - 6);
+    lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(dot, UI_C_ACCENT, 0);
+    lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_color(dot, lv_color_white(), 0);
+    lv_obj_set_style_border_width(dot, 2, 0);
+    lv_obj_set_style_shadow_color(dot, UI_C_ACCENT, 0);
+    lv_obj_set_style_shadow_width(dot, 14, 0);
+    lv_obj_set_style_shadow_spread(dot, 3, 0);
+    lv_obj_t *yl = ui_label(img, "You are here", ui_f_caption, UI_C_ACCENT);
+    lv_obj_set_style_bg_color(yl, UI_C_CARD, 0);
+    lv_obj_set_style_bg_opa(yl, 220, 0);
+    lv_obj_set_style_pad_hor(yl, 4, 0);
+    lv_obj_set_style_radius(yl, 4, 0);
+    lv_obj_update_layout(yl);
+    lv_obj_set_pos(yl, here.x + 10, here.y - lv_obj_get_height(yl) / 2);
+    return n;
+}
+
+static void paint_tiles(plan_tile_t *tiles, int n, const ix_status_t *st)
+{
+    for (int i = 0; i < n; i++) {
+        lv_color_t c = ui_state_color(st[tiles[i].room].state);
+        lv_obj_set_style_bg_color(tiles[i].tile, c, 0);
+        lv_obj_set_style_border_color(tiles[i].tile, c, 0);
+        lv_obj_set_style_text_color(tiles[i].lbl, lv_color_mix(c, lv_color_white(), 70), 0);
+    }
+}
+
+/* ---- whole floor, full screen ------------------------------------------ */
+static lv_obj_t *s_full;
+static plan_tile_t s_ftiles[IX_MAX_ROOMS];
+static int s_nftiles;
+
+static void full_close_cb(lv_event_t *e) { lv_obj_delete(s_full); s_full = NULL; }
+
+static void open_full_cb(lv_event_t *e)
+{
+    if (lv_event_get_target(e) != lv_event_get_current_target(e)) return;   /* a room tile was tapped */
+    s_full = ui_overlay(false);
+    lv_obj_set_style_bg_grad_color(s_full, lv_color_hex(0x0F1933), 0);
+    lv_obj_set_style_bg_grad_dir(s_full, LV_GRAD_DIR_VER, 0);
+
+    lv_obj_t *hdr = ui_row(s_full, 14);
+    lv_obj_set_pos(hdr, 20, 14);
+    lv_obj_set_width(hdr, UI_HOR_RES - 40);
+    ui_round_btn(hdr, LV_SYMBOL_LEFT, full_close_cb, NULL);
+    lv_obj_t *c = ui_col(hdr, 0);
+    ui_caption(c, "ZENTRALGEBÄUDE");
+    ui_label(c, "Floor 1", ui_f_h2, UI_C_TEXT);
+    ui_spacer(hdr);
+    static const ix_state_t legend[] = { IX_FREE, IX_OCCUPIED, IX_GHOST, IX_BOOKED, IX_OFFLINE };
+    for (int i = 0; i < 5; i++) {
+        lv_obj_t *p = ui_pill(hdr);
+        ui_pill_set(p, ui_state_color(legend[i]), ui_state_text(legend[i]));
+    }
+
+    lv_obj_t *card = ui_card(s_full);
+    lv_obj_set_style_pad_all(card, 0, 0);
+    lv_obj_set_size(card, ui_img_floorplan_full.header.w, ui_img_floorplan_full.header.h);
+    lv_obj_align(card, LV_ALIGN_CENTER, 0, 16);
+    lv_obj_t *img = lv_image_create(card);
+    lv_image_set_src(img, &ui_img_floorplan_full);
+    s_nftiles = plan_overlay(img, ui_plan_full_rooms, ui_plan_full_room_count, ui_plan_full_here, s_ftiles, true);
+
+    lv_obj_t *note = ui_label(s_full, "Tap a coloured room for details and booking.   Outer walls: OpenStreetMap  ·  room layout approximate",
+                              ui_f_small, UI_C_FAINT);
+    lv_obj_align(note, LV_ALIGN_BOTTOM_MID, 0, -18);
+    ui_overview_refresh(ix_now());
+}
+
 static void build_plan(lv_obj_t *page, int h)
 {
     lv_obj_t *card = ui_card(page);
@@ -268,61 +358,25 @@ static void build_plan(lv_obj_t *page, int h)
 
     lv_obj_t *hdr = ui_row(card, 8);
     lv_obj_set_width(hdr, lv_pct(100));
-    ui_label(hdr, "Floor plan", ui_f_title, UI_C_TEXT);
+    ui_label(hdr, "Floor 1", ui_f_title, UI_C_TEXT);
     ui_spacer(hdr);
-    lv_obj_t *live = ui_pill(hdr);
-    ui_pill_set(live, UI_C_FREE, "Live");
+    lv_obj_t *all = ui_btn(hdr, "Whole floor  " LV_SYMBOL_RIGHT, UI_BTN_CHIP, open_full_cb, NULL);
+    lv_obj_set_style_pad_ver(all, 6, 0);
 
-    int pw = COL_B_W - 32, ph = h - 32 - 40;
-    lv_obj_t *plan = ui_box(card);
+    /* walls, doors, stairs: pre-drawn from the real building outline; tap = whole floor */
+    lv_obj_t *plan = lv_image_create(card);
+    lv_image_set_src(plan, &ui_img_floorplan);
     lv_obj_set_pos(plan, 0, 40);
-    lv_obj_set_size(plan, pw, ph);
-
-    lv_obj_t *corr = ui_box(plan);
-    lv_obj_set_pos(corr, 0, PLAN_CORR_Y * ph / 240);
-    lv_obj_set_size(corr, pw, PLAN_CORR_H * ph / 240);
-    lv_obj_t *here = ui_row(corr, 6);
-    lv_obj_center(here);
-    lv_obj_t *dot = ui_box(here);
-    lv_obj_set_size(dot, 10, 10);
-    lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_color(dot, UI_C_ACCENT, 0);
-    lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
-    lv_obj_set_style_shadow_color(dot, UI_C_ACCENT, 0);
-    lv_obj_set_style_shadow_width(dot, 12, 0);
-    lv_obj_set_style_shadow_spread(dot, 2, 0);
-    ui_label(here, "You are here", ui_f_caption, UI_C_ACCENT);
-
-    s_nptiles = 0;
-    for (int i = 0; i < PLAN_N; i++) {
-        int room = ix_room_find(s_plan[i].id);
-        if (room < 0) continue;
-        plan_tile_t *t = &s_ptiles[s_nptiles++];
-        t->room = room;
-        t->tile = ui_box(plan);
-        lv_obj_set_pos(t->tile, s_plan[i].x * pw / 432, s_plan[i].y * ph / 240);
-        lv_obj_set_size(t->tile, s_plan[i].w * pw / 432 - 2, s_plan[i].h * ph / 240);
-        lv_obj_set_style_radius(t->tile, 10, 0);
-        lv_obj_set_style_bg_opa(t->tile, 50, 0);
-        lv_obj_set_style_border_width(t->tile, 1, 0);
-        lv_obj_set_style_border_opa(t->tile, 160, 0);
-        lv_obj_set_style_pad_all(t->tile, 8, 0);
-        lv_obj_add_flag(t->tile, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_add_event_cb(t->tile, plan_cb, LV_EVENT_CLICKED, (void *)(intptr_t)room);
-        const char *id = ix_room(room)->id;
-        t->lbl = ui_label(t->tile, id + 2, ui_f_label, UI_C_TEXT);   /* "1.08" */
-        lv_obj_align(t->lbl, LV_ALIGN_TOP_LEFT, 0, 0);
-    }
+    lv_obj_add_flag(plan, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(plan, open_full_cb, LV_EVENT_CLICKED, NULL);
+    s_nptiles = plan_overlay(plan, ui_plan_rooms, ui_plan_room_count, ui_plan_here, s_ptiles, false);
 }
 
 static void refresh_plan(const ix_status_t *st)
 {
-    for (int i = 0; i < s_nptiles; i++) {
-        lv_color_t c = ui_state_color(st[s_ptiles[i].room].state);
-        lv_obj_set_style_bg_color(s_ptiles[i].tile, c, 0);
-        lv_obj_set_style_border_color(s_ptiles[i].tile, c, 0);
-        lv_obj_set_style_text_color(s_ptiles[i].lbl, lv_color_mix(c, lv_color_white(), 90), 0);
-    }
+    paint_tiles(s_ptiles, s_nptiles, st);
+    if (s_full && lv_obj_is_valid(s_full)) paint_tiles(s_ftiles, s_nftiles, st);
+    else s_full = NULL;
 }
 
 /* ---- occupancy chart ------------------------------------------------- */
@@ -389,7 +443,7 @@ static void drawer_book_cb(lv_event_t *e)
     ui_show_page(UI_PAGE_BOOK);
 }
 
-static void drawer_close_cb(lv_event_t *e) { ui_close_overlays(); }
+static void drawer_close_cb(lv_event_t *e) { lv_obj_delete(lv_event_get_user_data(e)); }
 
 static void x_cb(void *obj, int32_t v) { lv_obj_set_x(obj, v); }
 
@@ -419,7 +473,7 @@ void ui_room_drawer(int room)
     lv_obj_set_width(top, lv_pct(100));
     ui_caption(top, "ROOM DETAILS");
     ui_spacer(top);
-    ui_round_btn(top, LV_SYMBOL_CLOSE, drawer_close_cb, NULL);
+    ui_round_btn(top, LV_SYMBOL_CLOSE, drawer_close_cb, o);
 
     lv_obj_t *idrow = ui_row(d, 12);
     ui_icon_tile(idrow, LV_SYMBOL_HOME, ui_state_color(st.state), 52);
@@ -536,7 +590,7 @@ void ui_overview_create(lv_obj_t *page)
 {
     build_hero(page);
     build_rooms(page);
-    int plan_h = (UI_PAGE_H - UI_GAP) / 2 + 10;
+    int plan_h = UI_PAGE_H * 60 / 100;   /* keep in sync with assets/gen_floorplan.py */
     build_plan(page, plan_h);
     build_occupancy(page, plan_h + UI_GAP, UI_PAGE_H - plan_h - UI_GAP);
 }

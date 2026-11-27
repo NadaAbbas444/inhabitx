@@ -179,7 +179,8 @@ lv_obj_t *ui_icon_tile(lv_obj_t *parent, const char *symbol, lv_color_t c, int s
 
 static void scrim_cb(lv_event_t *e)
 {
-    if (lv_event_get_target(e) == lv_event_get_current_target(e)) ui_close_overlays();
+    /* tapping the dark area closes only this overlay (e.g. the drawer above the floor view) */
+    if (lv_event_get_target(e) == lv_event_get_current_target(e)) lv_obj_delete_async(lv_event_get_current_target(e));
 }
 
 lv_obj_t *ui_overlay(bool scrim)
