@@ -114,7 +114,7 @@ sequenceDiagram
     B->>B: check: room free? ≤ 2 active bookings per email?
     B-->>UI: ✅ booked
     B->>R: MQTT booking 10:30–11:30
-    R->>R: show "BOOKED · Alex R."
+    R->>R: show "BOOKED · Yousef"
     Note over R: at 10:30 radar starts watching
     alt people detected
         R->>B: state = occupied
@@ -191,11 +191,11 @@ Tap a room, pick a duration, type a name and email, done.
 │                                                  │
 │ Name                                             │
 │ ┌──────────────────────────────────────────────┐ │
-│ │ Alex R.                                      │ │
+│ │ Yousef                                       │ │
 │ └──────────────────────────────────────────────┘ │
 │ Email                                            │
 │ ┌──────────────────────────────────────────────┐ │
-│ │ alex@uni.example                             │ │
+│ │ yousef@uni.example                           │ │
 │ └──────────────────────────────────────────────┘ │
 │                                                  │
 │ [          Book Z.1.10 until 11:06           ]   │
@@ -222,9 +222,9 @@ Same features, same booking API, on a phone.
 │ │ Z.1.12   free      › │ │      │ When                     │
 │ │ F1 · 4 · all day     │ │      │ [ Today · 10:30-11:30  ] │
 │ ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤ │      │ Name                     │
-│ │ Z.1.09   ghost       │ │      │ [ Alex R.              ] │
+│ │ Z.1.09   ghost       │ │      │ [ Felix                ] │
 │ │ frees in 4 min       │ │      │ Email                    │
-│ ├──────────────────────┤ │      │ [ alex@uni.example     ] │
+│ ├──────────────────────┤ │      │ [ felix@uni.example    ] │
 │ │ Z.1.08   occupied    │ │      │                          │
 │ │ ~3 people · to 11:00 │ │      │ [      Book room       ] │
 │ └──────────────────────┘ │      │ No account · max 2       │
