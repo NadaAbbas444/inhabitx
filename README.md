@@ -63,7 +63,7 @@ We have **no board in hand**, only **one remote board** in the Infineon live lab
 |---|---|---|
 | **Master** | the laptop: the PC simulator (`firmware/master/sim`) + MQTT. It shows the real screen UI in a window and must stay running while people use the link | the same `logic/` + `ui/` code on an E84 |
 | **Slaves** | fake slaves | the live board's radar for one room, fake slaves for the rest |
-| **Web page** | Netlify | Netlify |
+| **Web page** | GitHub Pages | GitHub Pages |
 
 The live board can play **one** role. Default: **slave**, because the radar is what only the E84 can do, while the master already runs on the laptop. This is decided in P0, once we know what the live lab allows (internet, screen, radar). A remote radar sees people at the lab, not in our room, so for the demo our room's presence comes from the fake slaves or from someone at the lab.
 
@@ -139,7 +139,7 @@ Found items: `online: true` means reported on the web and not yet confirmed at t
 | Need | Choice | Notes |
 |---|---|---|
 | MQTT broker | **HiveMQ Cloud Starter**, 15-day free trial until **12 Dec 2026** | broker `inhabitx-46341c9d.a03.euc1.aws.hivemq.cloud` (Frankfurt): MQTT over TLS on `8883`, secure WebSocket on `8884/mqtt`. HiveMQ no longer has a free hosted plan. **Cancel the trial or delete the broker before 12 Dec**, or it costs ~$249/month. Free alternative: EMQX Serverless. Not `test.mosquitto.org`, because anyone can send fake messages there |
-| Web hosting | **Netlify** (free) | connected to this repo, so every push updates the site. Works with a private repo |
+| Web hosting | **GitHub Pages** (free, public repo) | `https://nadaabbas444.github.io/inhabitx/`. The workflow `.github/workflows/pages.yml` publishes `web/` on every push to `main` |
 | Network for the boards | **phone hotspot** | campus Wi-Fi often needs a login page or university account, which microcontrollers can't handle |
 
 ### Broker logins

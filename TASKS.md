@@ -101,7 +101,7 @@ flowchart LR
 - [x] **HiveMQ Cloud** broker (Starter trial, ends 12 Dec 2026) with the three logins from README §4: `devices`, `web`, `webhook`, each limited to its topics
 - [x] Connection tested: connect with `devices`, publish a test message, see it arrive
 - [ ] Reminder set to cancel the HiveMQ trial before 12 Dec 2026
-- [ ] **Netlify** free account, connected to this repo, publishing the `web/` folder
+- [ ] Repo **public** and **GitHub Pages** on (Settings → Pages → Source: GitHub Actions)
 - [ ] **ModusToolbox** installed on the laptop
 - [ ] **Live lab:** how do we get our code onto the board? Does it have internet (to reach HiveMQ)? Can we see and touch its screen? Does it have the radar? Is it ours all day or in time slots?
 - [ ] Decide the live board's role: slave (default) or master
@@ -213,7 +213,7 @@ Only if the live board becomes the master: start from Infineon's LVGL display ex
 **Check:** a building-state message published by hand → the page updates within 2 s. Works on a phone.
 
 ### W3 — Host online 🔴
-Netlify serves `web/`. Every push to `main` updates the site.
+GitHub Pages serves `web/` at `https://nadaabbas444.github.io/inhabitx/`. Every push to `main` that changes `web/` updates the site.
 
 **Check:** the link opens on a phone **on mobile data** (not the hotspot) and shows live rooms.
 
