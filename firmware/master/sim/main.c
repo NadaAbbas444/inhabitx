@@ -204,6 +204,24 @@ int main(int argc, char **argv)
     lv_tick_set_cb(tick_ms);
     lv_display_t *disp = lv_x11_window_create("InhabitX master (simulator)", UI_HOR_RES, UI_VER_RES);
     lv_x11_inputs_create(disp, NULL);
+
+    /* The X11 driver hides the system pointer; draw a finger-sized dot instead */
+    for (lv_indev_t *in = lv_indev_get_next(NULL); in; in = lv_indev_get_next(in)) {
+        if (lv_indev_get_type(in) != LV_INDEV_TYPE_POINTER) continue;
+        lv_obj_t *cur = lv_obj_create(lv_layer_sys());
+        lv_obj_remove_style_all(cur);
+        lv_obj_set_size(cur, 18, 18);
+        lv_obj_set_style_radius(cur, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_color(cur, lv_color_white(), 0);
+        lv_obj_set_style_bg_opa(cur, LV_OPA_70, 0);
+        lv_obj_set_style_border_color(cur, lv_color_hex(0x3B7BFF), 0);
+        lv_obj_set_style_border_width(cur, 3, 0);
+        lv_obj_set_style_translate_x(cur, -9, 0);
+        lv_obj_set_style_translate_y(cur, -9, 0);
+        lv_obj_remove_flag(cur, LV_OBJ_FLAG_CLICKABLE);
+        lv_indev_set_cursor(in, cur);
+        break;
+    }
     lv_indev_t *tap = lv_indev_create();
     lv_indev_set_type(tap, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(tap, tap_read);
