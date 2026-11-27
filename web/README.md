@@ -1,4 +1,6 @@
-# Web app
+# Web page
 
-Find and book any room from a phone or laptop: live room list, floor map, booking form (name + email, no account).
-Uses the same API as the building hub. See the wireframes in the main README, section 6.
+A single `index.html` using `mqtt.js`. It connects to the cloud broker with the **read-only** `web` login over secure WebSockets, subscribes to `inhabitx/<building>/rooms` and shows the live room list. Anyone with the link can open it.
+
+View-only during the hackathon; online booking comes later via `inhabitx/<building>/bookings/new`.
+Hosted on Netlify (free), updated on every push to `main`.
