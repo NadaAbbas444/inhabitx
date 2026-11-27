@@ -12,16 +12,36 @@ FetchContent_Declare(lvgl
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(lvgl)
 
+# MQTT client: coreMQTT (MIT), the library inside Infineon's ModusToolbox
+# "mqtt" middleware, so the E84 port uses the same calls. 2.x = MQTT 3.1.1,
+# the version that middleware is built on.
+FetchContent_Declare(coremqtt
+    GIT_REPOSITORY https://github.com/FreeRTOS/coreMQTT.git
+    GIT_TAG        v2.3.1
+    GIT_SHALLOW    TRUE)
+FetchContent_GetProperties(coremqtt)
+if(NOT coremqtt_POPULATED)
+    FetchContent_Populate(coremqtt)
+endif()
+
 find_package(X11 REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 file(GLOB UI_SRC ${CMAKE_CURRENT_SOURCE_DIR}/../ui/*.c)
 add_executable(master_sim
     main.c
+    mqtt_link.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../logic/ix_model.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../logic/ix_msg.c
+    ${coremqtt_SOURCE_DIR}/source/core_mqtt.c
+    ${coremqtt_SOURCE_DIR}/source/core_mqtt_serializer.c
+    ${coremqtt_SOURCE_DIR}/source/core_mqtt_state.c
     ${UI_SRC})
 set(UI_HOR_RES 1024 CACHE STRING "screen width  (1024 = 7\"/10.1\", 800 = kit 4.3\")")
 set(UI_VER_RES 600  CACHE STRING "screen height (600 or 480)")
-target_compile_definitions(master_sim PRIVATE UI_HOR_RES=${UI_HOR_RES} UI_VER_RES=${UI_VER_RES})
-target_include_directories(master_sim PRIVATE ../logic ../ui)
+target_compile_definitions(master_sim PRIVATE UI_HOR_RES=${UI_HOR_RES} UI_VER_RES=${UI_VER_RES}
+    IX_SIM_DIR="${CMAKE_CURRENT_SOURCE_DIR}" MQTT_DO_NOT_USE_CUSTOM_CONFIG)
+target_include_directories(master_sim PRIVATE ../logic ../ui
+    ${coremqtt_SOURCE_DIR}/source/include ${coremqtt_SOURCE_DIR}/source/interface)
 target_compile_options(master_sim PRIVATE -Wall -Wextra -Wno-unused-parameter)
-target_link_libraries(master_sim PRIVATE lvgl X11::X11 m pthread)
+target_link_libraries(master_sim PRIVATE lvgl X11::X11 OpenSSL::SSL m pthread)

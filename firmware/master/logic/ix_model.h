@@ -132,10 +132,12 @@ typedef struct {
     int           room;
     ix_category_t cat;
     time_t        when;
+    bool          online;   /* reported on the web, not yet confirmed at the screen */
 } ix_found_t;
 
 const char *ix_category_name(ix_category_t c);
 int  ix_found_add(int room, ix_category_t cat, time_t now);   /* <0 if full */
+void ix_found_set_online(int id, bool online);   /* id from ix_found_add */
 /* room or cat < 0 means "any". Newest first. */
 int  ix_found_search(int room, int cat, const ix_found_t **out, int max);
 

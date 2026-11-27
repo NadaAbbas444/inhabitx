@@ -121,9 +121,9 @@ static lv_obj_t *item_row(lv_obj_t *parent, const ix_found_t *f, time_t now)
     ui_icon_tile(r, LV_SYMBOL_DIRECTORY, UI_C_FREE, 36);
     lv_obj_t *c = ui_col(r, 0);
     ui_label(c, ix_category_name(f->cat), ui_f_label, UI_C_TEXT);
-    char buf[48], when[32];
+    char buf[64], when[32];
     fmt_when(when, sizeof when, f->when, now);
-    snprintf(buf, sizeof buf, "found in %s", ix_room(f->room)->id);
+    snprintf(buf, sizeof buf, "found in %s%s", ix_room(f->room)->id, f->online ? " · reported online" : "");
     ui_label(c, buf, ui_f_small, UI_C_MUTED);
     ui_spacer(r);
     ui_label(r, when, ui_f_small, UI_C_MUTED);

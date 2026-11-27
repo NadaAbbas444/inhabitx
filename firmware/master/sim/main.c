@@ -2,15 +2,21 @@
  * InhabitX master UI, PC simulator.
  *
  * Opens an X11 window the size of the board's screen and runs the same
- * ui/ + logic/ code as the E84. Fake slaves are built in; control them by
- * typing commands in the terminal (type "h" for help).
+ * ui/ + logic/ code as the E84. Connects to the MQTT broker (README §4):
+ * listens to the slaves, publishes the building state and answers bookings
+ * and found items from the web page. Type "h" in the terminal for commands.
  *
- *   ./master_sim               real clock
+ *   ./master_sim               broker from sim/broker.conf, real clock
+ *   ./master_sim --offline     no broker: built-in fake slaves + demo data
+ *   ./master_sim --fake        broker, plus the built-in fake slaves
  *   ./master_sim --at 10:05    pretend it's 10:05 today (bookings need 07-22 h)
+ *   ./master_sim --conf FILE   broker settings from FILE
  */
 #include "lvgl.h"
 #include "ui.h"
 #include "ix_model.h"
+#include "ix_msg.h"
+#include "mqtt_link.h"
 
 #include <ctype.h>
 #include <fcntl.h>
@@ -61,6 +67,9 @@ static lv_obj_t *find_focused_ta(lv_obj_t *o)
     return NULL;
 }
 
+static bool s_fakes = true;     /* built-in fake slaves running */
+static bool s_online;           /* using the broker */
+
 /* ---- fake slaves ------------------------------------------------------ */
 typedef struct { const char *id; uint16_t seats; bool occupied; bool online; } fake_t;
 static fake_t s_fake[] = {
@@ -75,6 +84,7 @@ static fake_t s_fake[] = {
 
 static void publish_slaves(void)
 {
+    if (!s_fakes) return;
     time_t now = ix_now();
     for (int i = 0; i < N_FAKE; i++)
         if (s_fake[i].online) ix_slave_update(s_fake[i].id, s_fake[i].occupied, now);
@@ -103,6 +113,7 @@ static void print_status(void)
         if (st.state == IX_GHOST) printf("  releases in %ds", (int)st.release_in_s);
         printf("\n");
     }
+    if (s_online) printf("  broker: %s\n", mqtt_link_connected() ? "connected" : "not connected");
 }
 
 static void help(void)
@@ -129,6 +140,7 @@ static void ghost_booking(const char *room_id)
 static void handle_line(char *line)
 {
     char cmd = line[0];
+    if ((cmd == 'o' || cmd == 'x') && !s_fakes) { printf("  built-in fake slaves are off (start with --fake or --offline)\n"); return; }
     fake_t *f = line[0] ? find_fake(line + 1) : NULL;
     switch (cmd) {
     case 'o': if (f) { f->occupied = !f->occupied; printf("  %s %s\n", f->id, f->occupied ? "occupied" : "empty"); } break;
@@ -159,6 +171,43 @@ static void poll_stdin(void)
     }
 }
 
+/* ---- broker (M1, M4, M6) ----------------------------------------------- */
+static bool s_dirty = true;     /* publish the building state soon */
+
+static void on_msg(const char *topic, size_t tl, const char *payload, size_t pl)
+{
+    ix_msg_result_t r;
+    ix_msg_handle(topic, tl, payload, pl, ix_now(), &r);
+    if (r.reply) mqtt_link_publish(r.reply_topic, r.reply_payload, strlen(r.reply_payload), false);
+    if (r.changed) s_dirty = true;
+    if (r.log[0]) printf("  %s\n", r.log);
+}
+
+static char s_last_rooms[8192], s_last_found[8192];
+
+static void on_up(void)
+{
+    s_last_rooms[0] = s_last_found[0] = 0;  /* republish everything after a reconnect */
+    s_dirty = true;
+}
+
+/* Publish rooms / lostfound (retained) when their content changed. */
+static void publish_state(void)
+{
+    static char stable[8192], msg[8192];
+    time_t now = ix_now();
+    if (!mqtt_link_connected()) return;
+    if (ix_msg_rooms(now, true, stable, sizeof stable) && strcmp(stable, s_last_rooms) != 0) {
+        size_t n = ix_msg_rooms(now, false, msg, sizeof msg);
+        if (n && mqtt_link_publish(IX_TOPIC_ROOMS, msg, n, true)) strcpy(s_last_rooms, stable);
+    }
+    if (ix_msg_lostfound(now, true, stable, sizeof stable) && strcmp(stable, s_last_found) != 0) {
+        size_t n = ix_msg_lostfound(now, false, msg, sizeof msg);
+        if (n && mqtt_link_publish(IX_TOPIC_LOSTFOUND, msg, n, true)) strcpy(s_last_found, stable);
+    }
+    s_dirty = false;
+}
+
 /* ---- demo data -------------------------------------------------------- */
 static void seed(void)
 {
@@ -166,6 +215,7 @@ static void seed(void)
     ix_init(now);
     for (int i = 0; i < N_FAKE; i++) ix_room_add(s_fake[i].id, 1, s_fake[i].seats);
     publish_slaves();
+    if (s_online) return;   /* the real master starts empty */
 
     time_t first = ix_day_first_slot(now);
     ix_slave_update("Z.1.08", false, now);      /* book it first, then people walk in */
@@ -189,14 +239,32 @@ static void seed(void)
 
 int main(int argc, char **argv)
 {
+    bool offline = false, fake = false;
+    const char *conf_path = getenv("IX_BROKER_CONF") ? getenv("IX_BROKER_CONF") : IX_SIM_DIR "/broker.conf";
     for (int i = 1; i < argc; i++) {
         int h, m;
-        if (strcmp(argv[i], "--at") == 0 && i + 1 < argc && sscanf(argv[++i], "%d:%d", &h, &m) == 2) {
+        if (strcmp(argv[i], "--offline") == 0) offline = true;
+        else if (strcmp(argv[i], "--fake") == 0) fake = true;
+        else if (strcmp(argv[i], "--conf") == 0 && i + 1 < argc) conf_path = argv[++i];
+        else if (strcmp(argv[i], "--at") == 0 && i + 1 < argc && sscanf(argv[++i], "%d:%d", &h, &m) == 2) {
             time_t t = time(NULL);
             struct tm tm;
             localtime_r(&t, &tm);
             tm.tm_hour = h; tm.tm_min = m; tm.tm_sec = 0;
             s_offset = (long)(mktime(&tm) - t);
+        }
+    }
+
+    setvbuf(stdout, NULL, _IOLBF, 0);
+    if (!offline) {
+        mqtt_link_conf_t conf;
+        char why[256];
+        if (mqtt_link_load_conf(conf_path, &conf, why, sizeof why)) {
+            mqtt_link_start(&conf, "inhabitx-master-" IX_BUILDING, IX_TOPIC_SUB, on_msg, on_up);
+            s_online = true;
+            s_fakes = fake;
+        } else {
+            printf("broker: %s\nrunning offline with the built-in fake slaves (see sim/README.md)\n", why);
         }
     }
 
@@ -231,13 +299,19 @@ int main(int argc, char **argv)
     ui_init();
 
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
-    printf("InhabitX master simulator %dx%d. Ghost release after %d s.\n", UI_HOR_RES, UI_VER_RES, IX_GHOST_RELEASE_S);
+    printf("InhabitX master simulator %dx%d. Ghost release after %d s. %s\n", UI_HOR_RES, UI_VER_RES,
+           IX_GHOST_RELEASE_S, !s_online ? "Offline." : s_fakes ? "Broker + built-in fake slaves." : "Broker.");
     help();
 
-    uint32_t last_pub = 0;
+    uint32_t last_pub = 0, last_state = 0;
     for (;;) {
         uint32_t wait = lv_timer_handler();
         if (tick_ms() - last_pub >= 2000) { publish_slaves(); last_pub = tick_ms(); }
+        if (s_online) {
+            mqtt_link_poll();
+            /* at most twice a second; states also change with time (offline, ghost release) */
+            if (s_dirty || tick_ms() - last_state >= 500) { publish_state(); last_state = tick_ms(); }
+        }
         poll_stdin();
         fflush(stdout);
         usleep((wait > 20 ? 20 : wait) * 1000);

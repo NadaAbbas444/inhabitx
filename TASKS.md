@@ -31,8 +31,8 @@ flowchart LR
     subgraph MASTER["M · Master · laptop, E84 later"]
         M2[M2 Logic ✅] --> M3[M3 Screen UI ✅]
         M3 --> M5[M5 Booking on screen ✅]
-        M1[M1 Subscribe to slaves] --> M4[M4 Publish building state]
-        M1 --> M6[M6 Answer web requests]
+        M1[M1 Subscribe to slaves 🔶] --> M4[M4 Publish building state 🔶]
+        M1 --> M6[M6 Answer web requests 🔶]
         M2 --> M1
         M3 --> M7[M7 Master on an E84]
     end
@@ -79,12 +79,12 @@ flowchart LR
 | S2 | Read the sensor | S | 🔴 | | S1, P0 (live lab) |
 | S3 | Someone there or not | S | 🔴 | | S2 |
 | S4 | Publish to broker | S | 🔴 | | S3, T0, P0 |
-| M1 | Subscribe to slaves | M | 🔴 | | M2, T0, P0 |
+| M1 | Subscribe to slaves | M | 🔴 | 🔶 | M2, T0, P0 |
 | M2 | Logic: state, bookings, ghost release | M | 🔴 | ✅ | – |
 | M3 | Screen UI | M | 🔴 | ✅ in the simulator | M2 |
-| M4 | Publish building state + found items | M | 🔴 | | M1 |
+| M4 | Publish building state + found items | M | 🔴 | 🔶 | M1 |
 | M5 | Booking on screen | M | 🟡 | ✅ in the simulator | M3 |
-| M6 | Answer web requests | M | 🔴 | | M1 |
+| M6 | Answer web requests | M | 🔴 | 🔶 | M1 |
 | M7 | Master on an E84 | M | ⚪ | | M3, M1, P0 (live lab) |
 | W1 | Fake slaves script | W | 🔴 | | T0, P0 |
 | W2 | Web page reads broker | W | 🔴 | 🔶 demo mode | T0 (M4 for real data) |
@@ -165,7 +165,9 @@ Send the T0 message every 2 s over Wi-Fi to HiveMQ (start from the MQTT example 
 
 The master's code is in `firmware/master`: `logic/` (plain C), `ui/` (LVGL) and `sim/` (runs both on a Linux laptop, see `firmware/master/sim/README.md`). The same `logic/` and `ui/` go onto an E84 later.
 
-### M1 — Subscribe to slaves 🔴
+### M1 — Subscribe to slaves 🔴 🔶
+Built (coreMQTT over TLS, `sim/mqtt_link.c`, messages in `logic/ix_msg.c`) and tested against a local TLS broker; still to test against HiveMQ. Setup in `firmware/master/sim/README.md`.
+
 Add MQTT to the simulator (`sim/main.c`): connect to HiveMQ with the `devices` login (TLS), subscribe to `inhabitx/Z/#`, and call `ix_slave_update()` for every slave message. The built-in fake slaves stay available for offline tests.
 
 **Check:** with the fake slaves script (W1) running, the simulator's screen follows it, and a room with no message for 10 s shows as `offline`.
@@ -180,7 +182,7 @@ Floor plan, rooms list, campus map, lost & found. 1024×600.
 
 **Check:** run the simulator, type `o 09` → Z.1.09 turns occupied within 2 s.
 
-### M4 — Publish building state + found items 🔴
+### M4 — Publish building state + found items 🔴 🔶
 Publish `inhabitx/Z/rooms` and `inhabitx/Z/lostfound` (both retained) every time something changes. No names or emails.
 
 **Check:** the messages appear in the HiveMQ console and match what the screen shows.
@@ -188,7 +190,7 @@ Publish `inhabitx/Z/rooms` and `inhabitx/Z/lostfound` (both retained) every time
 ### M5 — Booking on screen 🟡 ✅ in the simulator
 **Check:** book a room in the simulator → it shows as `booked` on the screen (and on the web page once M4 works).
 
-### M6 — Answer web requests 🔴
+### M6 — Answer web requests 🔴 🔶
 Subscribe to `bookings/new` and `lostfound/new`. Run them through `ix_book()` / `ix_found_add()` and publish the answer to `replies/<req>`. Never log or republish names and emails.
 
 **Check:** publish a booking request by hand in the HiveMQ console → a reply appears and the room turns booked on the screen. Send a 3rd booking with the same email → `{"ok":false,"error":"limit"}`.

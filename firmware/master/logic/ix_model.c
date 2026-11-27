@@ -355,6 +355,11 @@ int ix_found_add(int room, ix_category_t cat, time_t now)
     return -1;
 }
 
+void ix_found_set_online(int id, bool online)
+{
+    if (id >= 0 && id < IX_MAX_FOUND && s_found[id].used) s_found[id].online = online;
+}
+
 int ix_found_search(int room, int cat, const ix_found_t **out, int max)
 {
     int n = 0;
