@@ -267,10 +267,17 @@ static int plan_overlay(lv_obj_t *img, const ui_plan_room_t *rooms, int count, l
             lv_obj_set_style_border_opa(t->tile, 200, 0);
             lv_obj_add_flag(t->tile, LV_OBJ_FLAG_CLICKABLE);
             lv_obj_add_event_cb(t->tile, plan_cb, LV_EVENT_CLICKED, (void *)(intptr_t)room);
-            t->lbl = ui_label(t->tile, big ? pr->id : pr->id + 2, big ? ui_f_label : ui_f_caption, UI_C_TEXT);
+            /* official name if it has one ("HS 4"), else the short code ("1.08") */
+            bool named = strcmp(pr->name, pr->id) != 0;
+            char buf[32];
+            if (big && named) snprintf(buf, sizeof buf, "%s\n%s", pr->name, pr->id);
+            else snprintf(buf, sizeof buf, "%s", named ? pr->name : (big ? pr->id : pr->id + 2));
+            t->lbl = ui_label(t->tile, buf, big ? ui_f_label : ui_f_caption, UI_C_TEXT);
+            lv_obj_set_style_text_align(t->lbl, LV_TEXT_ALIGN_CENTER, 0);
             lv_obj_center(t->lbl);
-        } else if (pr->w >= 22) {
-            lv_obj_t *l = ui_label(img, pr->kind == UI_PLAN_ROOM ? pr->id + 2 : pr->id,
+        } else if (pr->kind != UI_PLAN_HALL && pr->w >= (big ? 30 : 36) && pr->h >= (big ? 12 : 16)) {
+            bool named = strcmp(pr->name, pr->id) != 0;
+            lv_obj_t *l = ui_label(img, named ? pr->name : pr->kind == UI_PLAN_ROOM ? pr->id + 2 : pr->id,
                                    big ? ui_f_small : ui_f_caption, UI_C_FAINT);
             lv_obj_update_layout(l);
             lv_obj_set_pos(l, pr->x + (pr->w - lv_obj_get_width(l)) / 2, pr->y + (pr->h - lv_obj_get_height(l)) / 2);
@@ -344,7 +351,7 @@ static void open_full_cb(lv_event_t *e)
     lv_image_set_src(img, &ui_img_floorplan_full);
     s_nftiles = plan_overlay(img, ui_plan_full_rooms, ui_plan_full_room_count, ui_plan_full_here, s_ftiles, true);
 
-    lv_obj_t *note = ui_label(s_full, "Tap a coloured room for details and booking.   Outer walls: OpenStreetMap  ·  room layout approximate",
+    lv_obj_t *note = ui_label(s_full, "Tap a coloured room for details and booking.   Plan traced from campusplan.aau.at",
                               ui_f_small, UI_C_FAINT);
     lv_obj_align(note, LV_ALIGN_BOTTOM_MID, 0, -18);
     ui_overview_refresh(ix_now());

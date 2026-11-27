@@ -74,9 +74,9 @@ void ui_lf_create(lv_obj_t *parent);
 void ui_lf_refresh(time_t now);
 void ui_lf_reset(void);
 
-/* floor plan asset (floorplan.c, generated: real outline, approximate interior) */
-enum { UI_PLAN_LIVE, UI_PLAN_ROOM, UI_PLAN_LABEL };
-typedef struct { const char *id; uint8_t kind; int16_t x, y, w, h; } ui_plan_room_t;
+/* floor plan asset (floorplan.c, traced from the public AAU campus plan) */
+enum { UI_PLAN_LIVE, UI_PLAN_ROOM, UI_PLAN_LABEL, UI_PLAN_HALL };
+typedef struct { const char *id, *name; uint8_t kind; int16_t x, y, w, h; } ui_plan_room_t;
 extern const lv_image_dsc_t ui_img_floorplan;
 extern const ui_plan_room_t ui_plan_rooms[];
 extern const int ui_plan_room_count;

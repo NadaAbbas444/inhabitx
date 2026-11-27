@@ -64,11 +64,12 @@ static lv_obj_t *find_focused_ta(lv_obj_t *o)
 /* ---- fake slaves ------------------------------------------------------ */
 typedef struct { const char *id; uint16_t seats; bool occupied; bool online; } fake_t;
 static fake_t s_fake[] = {
-    { "Z.1.08", 24, true,  true  },
-    { "Z.1.09",  8, false, true  },
-    { "Z.1.10",  6, false, true  },
-    { "Z.1.11", 10, true,  true  },
-    { "Z.1.12",  4, false, false },
+    /* capacities from the AAU campus plan (campusplan.aau.at) */
+    { "Z.1.08", 40, true,  true  },     /* Seminarraum           */
+    { "Z.1.09", 48, false, true  },     /* Seminarraum           */
+    { "Z.1.10",173, false, true  },     /* Hoersaal 4 (HS 4)     */
+    { "Z.1.11", 86, true,  true  },     /* Hoersaal 3 (HS 3)     */
+    { "Z.1.12",  4, false, false },     /* NOT in the AAU plan: placeholder from README, to be replaced */
 };
 #define N_FAKE ((int)(sizeof s_fake / sizeof s_fake[0]))
 
