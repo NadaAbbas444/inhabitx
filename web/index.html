@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0F1C">
+<title>InhabitX · Free rooms</title>
+<meta name="description" content="Live free rooms in the Zentralgebäude, Universität Klagenfurt. Sensed by the rooms themselves, no cameras.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  /* Same tokens as the master screen (firmware/master/ui/ui_internal.h) */
+  :root {
+    --bg: #0A0F1C; --bg2: #0F1933; --card: #121A2C; --card2: #19233A; --card3: #22304E;
+    --line: #1E2942; --text: #F1F5FB; --muted: #8B97AE; --faint: #56627C;
+    --accent: #3B7BFF; --accent2: #6D5BFF;
+    --free: #22C55E; --busy: #F43F5E; --ghost: #F59E0B; --booked: #818CF8; --offline: #64748B;
+    --r: 18px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  html { background: var(--bg); }
+  body {
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%) fixed;
+    color: var(--text); font: 15px/1.45 Roboto, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 40px; }
+  button { font: inherit; color: inherit; }
+
+  /* header */
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .logo { font-weight: 700; font-size: 26px; letter-spacing: -.3px; }
+  .logo b { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 13px; }
+  .spacer { flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 99px;
+          font-size: 12px; font-weight: 500; background: color-mix(in srgb, var(--c) 16%, transparent);
+          color: color-mix(in srgb, var(--c) 45%, white); white-space: nowrap; }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+  .pill.live::before { animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 70%, transparent); }
+                     100% { box-shadow: 0 0 0 8px transparent; } }
+
+  /* layout */
+  .grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 900px) { .grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; } }
+  .col { display: grid; gap: 16px; min-width: 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
+  .cap { font-size: 12px; font-weight: 500; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+  h2 { font-size: 18px; margin: 0; }
+  .row { display: flex; align-items: center; gap: 10px; }
+
+  /* hero */
+  .hero { position: relative; overflow: hidden; border-radius: var(--r); padding: 22px;
+          background: linear-gradient(100deg, #2563EB, var(--accent2)); box-shadow: 0 10px 40px -12px #3B7BFF66; }
+  .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; background: #fff; }
+  .hero::before { width: 240px; height: 240px; right: -70px; top: -110px; opacity: .06; }
+  .hero::after  { width: 150px; height: 150px; right: 120px; bottom: -90px; opacity: .07; }
+  .hero .cap { color: #ffffffc0; }
+  .hero-main { display: flex; align-items: flex-end; gap: 14px; margin-top: 18px; position: relative; }
+  .hero-num { font-size: 64px; font-weight: 700; line-height: .9; }
+  .hero-text { font-size: 22px; font-weight: 700; }
+  .hero-sub { font-size: 13px; color: #ffffffc8; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; position: relative; }
+  .stat { display: flex; align-items: center; gap: 8px; background: #ffffff1f; padding: 6px 11px; border-radius: 10px;
+          font-weight: 500; font-size: 14px; }
+  .stat i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); border: 1px solid #fff; }
+
+  /* rooms */
+  .rooms-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tag { font-size: 12px; font-weight: 500; color: var(--accent); background: #3B7BFF28; padding: 3px 8px; border-radius: 6px; }
+  .stepper { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+  .round { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--card2);
+           cursor: pointer; font-size: 18px; line-height: 1; }
+  .round:active { background: var(--card3); }
+  .stepper b { color: var(--text); font-size: 17px; min-width: 22px; text-align: center; }
+  .room { display: grid; grid-template-columns: 40px 1fr auto; gap: 4px 12px; align-items: center;
+          padding: 12px 2px; border-top: 1px solid var(--line); }
+  .room:first-of-type { border-top: 0; }
+  .room.dim { opacity: .45; }
+  .tile { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-weight: 500;
+          background: color-mix(in srgb, var(--c) 22%, transparent); color: color-mix(in srgb, var(--c) 45%, white); grid-row: span 2; }
+  .room .id { font-weight: 500; }
+  .room .meta { color: var(--muted); font-size: 13px; }
+  .room .right { text-align: right; grid-row: span 2; display: grid; gap: 4px; justify-items: end; }
+  .room .detail { font-size: 13px; color: var(--muted); }
+  .room .detail.warn { color: var(--ghost); font-variant-numeric: tabular-nums; }
+  .bar { grid-column: 2 / 4; height: 6px; border-radius: 4px; background: var(--card2); position: relative; overflow: hidden; margin-top: 4px; }
+  .bar span { position: absolute; top: 0; bottom: 0; background: var(--booked); opacity: .8; }
+  .bar em { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; }
+  .note { color: var(--muted); font-size: 13px; margin: 12px 0 0; }
+  .empty { color: var(--muted); padding: 16px 0; }
+
+  /* map */
+  #map { height: 300px; border-radius: 14px; margin-top: 12px; background: #0b1222; }
+  @media (min-width: 900px) { #map { height: 340px; } }
+  .leaflet-container { font: inherit; }
+  /* OSM's standard tiles, turned dark to match the theme */
+  .leaflet-tile-pane { filter: invert(1) hue-rotate(200deg) brightness(.82) contrast(.92) saturate(.6); }
+  .leaflet-tooltip.zlabel { background: var(--card); color: var(--text); border: 1px solid var(--accent);
+          border-radius: 10px; padding: 6px 10px; box-shadow: 0 6px 24px -6px #3B7BFF88; font-weight: 500; }
+  .leaflet-tooltip.zlabel::before { display: none; }
+  .leaflet-control-attribution { background: #0A0F1Ccc !important; color: var(--muted) !important; }
+  .leaflet-control-attribution a { color: var(--muted) !important; }
+
+  /* lost & found */
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  label { display: grid; gap: 6px; font-size: 12px; color: var(--muted); letter-spacing: .5px; }
+  select { appearance: none; background: var(--card2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238B97AE' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;
+           border: 1px solid var(--line); color: var(--text); border-radius: 12px; padding: 12px; font: inherit; }
+  select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .btn { width: 100%; margin-top: 12px; padding: 13px; border: 0; border-radius: 12px; font-weight: 500; cursor: pointer;
+         color: #fff; background: linear-gradient(90deg, var(--accent), var(--accent2)); box-shadow: 0 6px 20px -8px #3B7BFF; }
+  .result { margin-top: 14px; display: grid; gap: 8px; }
+  .item { display: flex; align-items: center; gap: 12px; background: var(--card2); border-radius: 12px; padding: 10px 12px; }
+  .item .ic { width: 34px; height: 34px; border-radius: 10px; background: #22C55E33; color: var(--free); display: grid; place-items: center; font-weight: 700; }
+  .item .grow { flex: 1; min-width: 0; }
+  .item small { display: block; color: var(--muted); }
+  .item time { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .res-title { font-weight: 700; }
+
+  footer { margin-top: 22px; color: var(--faint); font-size: 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  .banner { background: #6D5BFF22; color: #C4BDFF; border: 1px solid #6D5BFF55; border-radius: 12px;
+            padding: 8px 12px; font-size: 13px; margin-bottom: 14px; display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="logo">Inhabi<b>X</b></div>
+      <div class="sub">Universität Klagenfurt · Zentralgebäude</div>
+    </div>
+    <div class="spacer"></div>
+    <span class="pill" id="conn" style="--c: var(--ghost)">Connecting</span>
+  </header>
+
+  <div class="banner" id="demo">Demo data: no broker configured. Add the read-only login in <code>CONFIG</code> to go live.</div>
+
+  <div class="grid">
+    <div class="col">
+      <section class="hero" aria-live="polite">
+        <div class="cap">Free right now</div>
+        <div class="hero-main">
+          <div class="hero-num" id="free-n">–</div>
+          <div>
+            <div class="hero-text" id="free-text">rooms free</div>
+            <div class="hero-sub" id="free-sub">Building Z · updated –</div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat" style="--c: var(--busy)"><i></i><span id="s-busy">– in use</span></div>
+          <div class="stat" style="--c: var(--ghost)"><i></i><span id="s-ghost">– may free up</span></div>
+          <div class="stat" style="--c: var(--offline)"><i></i><span id="s-off">– offline</span></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="rooms-head">
+          <h2>Rooms</h2><span class="tag">Floor 1</span>
+          <div class="spacer"></div>
+          <div class="stepper">Group size
+            <button class="round" id="minus" aria-label="Fewer people">−</button>
+            <b id="people">1</b>
+            <button class="round" id="plus" aria-label="More people">+</button>
+          </div>
+        </div>
+        <div id="rooms"><div class="empty">Waiting for the building…</div></div>
+        <p class="note">Want one of these? Book it on the screen at the Zentralgebäude entrance: name + email, no account. If nobody shows up, the room frees itself again.</p>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <div class="row"><h2>Campus</h2><div class="spacer"></div><span class="pill" style="--c: var(--accent)" id="map-pill">Live building</span></div>
+        <div id="map" role="img" aria-label="Map of the Universität Klagenfurt campus with the Zentralgebäude highlighted"></div>
+      </section>
+
+      <section class="card">
+        <h2>Lost something?</h2>
+        <p class="note" style="margin-top:6px">Check if it was handed in before walking to the desk. Only the room, the type of item and the time are listed.</p>
+        <div class="fields">
+          <label>ROOM <select id="lf-room"><option value="">Not sure</option></select></label>
+          <label>WHAT IS IT <select id="lf-cat"><option value="">Any type</option></select></label>
+        </div>
+        <button class="btn" id="lf-go">Search</button>
+        <div class="result" id="lf-res"></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    <span>No cameras. Rooms only report “someone there or not”. Names and emails never leave the building.</span>
+    <span>Map © OpenStreetMap contributors</span>
+    <span>Powered by Infineon PSOC™ Edge</span>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ---- configuration ------------------------------------------------------
+ * The web login is READ-ONLY (README §4), so it is fine that it's visible. */
+const CONFIG = {
+  building: 'Z',
+  brokerUrl: '',          // e.g. 'wss://<cluster>.s1.eu.hivemq.cloud:8884/mqtt'
+  username: 'web',
+  password: '',
+};
+
+/* Room facts the building-state message doesn't carry (yet) */
+const ROOM_INFO = {
+  'Z.1.08': { seats: 24, floor: 1 }, 'Z.1.09': { seats: 8, floor: 1 }, 'Z.1.10': { seats: 6, floor: 1 },
+  'Z.1.11': { seats: 10, floor: 1 }, 'Z.1.12': { seats: 4, floor: 1 },
+};
+const CATS = { phone: 'Phone', keys: 'Keys', wallet: 'Wallet / cards', bag: 'Bag', bottle: 'Bottle',
+  clothing: 'Clothing', electronics: 'Laptop / electronics', umbrella: 'Umbrella', glasses: 'Glasses', other: 'Other' };
+const STATE = {
+  free: ['Free', '--free'], booked: ['Booked', '--booked'], ghost: ['No-show', '--ghost'],
+  occupied: ['In use', '--busy'], offline: ['Offline', '--offline'],
+};
+const DAY_OPEN = 7, DAY_CLOSE = 22;
+
+/* ---- state ------------------------------------------------------------ */
+let building = null;      // last building-state message
+let receivedAt = 0;       // local ms when it arrived (for countdowns)
+let lostfound = null;     // last lost & found message
+let people = 1;
+let connState = 'connecting';
+
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const hm = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const info = r => ({ seats: r.seats ?? ROOM_INFO[r.id]?.seats, floor: r.floor ?? ROOM_INFO[r.id]?.floor ?? 1 });
+
+function releaseLeft(r) {
+  if (r.state !== 'ghost' || r.release_in_s == null) return null;
+  return Math.max(0, r.release_in_s - Math.floor((Date.now() - receivedAt) / 1000));
+}
+
+function detail(r) {
+  switch (r.state) {
+    case 'free':     return r.free_until ? 'until ' + r.free_until : 'rest of the day';
+    case 'booked':   return r.until ? 'booked until ' + r.until : 'booked';
+    case 'occupied': return r.until ? 'until ' + r.until : 'walk-in';
+    case 'ghost': {
+      const s = releaseLeft(r);
+      return s == null ? 'may free up soon' : 'frees in ' + Math.floor(s / 60) + ':' + pad(s % 60);
+    }
+    default: return 'no sensor signal';
+  }
+}
+
+/* "10:00" -> fraction of the 07-22 day */
+function dayFrac(t) {
+  const [h, m] = t.split(':').map(Number);
+  return Math.min(1, Math.max(0, (h + m / 60 - DAY_OPEN) / (DAY_CLOSE - DAY_OPEN)));
+}
+
+/* ---- render ----------------------------------------------------------- */
+function render() {
+  if (!building) return;
+  const rooms = building.rooms || [];
+  let free = 0, busy = 0, ghost = 0, off = 0;
+  for (const r of rooms) {
+    if ((info(r).seats ?? 999) < people) continue;
+    if (r.state === 'free') free++;
+    else if (r.state === 'ghost') ghost++;
+    else if (r.state === 'offline') off++;
+    else busy++;
+  }
+  $('free-n').textContent = free;
+  $('free-text').textContent = free === 1 ? 'room free' : 'rooms free';
+  const age = Math.round((Date.now() - receivedAt) / 1000);
+  $('free-sub').textContent = (people > 1 ? `for ${people} people · ` : 'Building Z · ') +
+    (age < 5 ? 'updated just now' : `updated ${age < 60 ? age + ' s' : Math.round(age / 60) + ' min'} ago`);
+  $('s-busy').textContent = busy + ' in use';
+  $('s-ghost').textContent = ghost + ' may free up';
+  $('s-off').textContent = off + ' offline';
+  $('people').textContent = people;
+
+  const now = new Date(), nowFrac = dayFrac(hm(now));
+  $('rooms').innerHTML = rooms.map(r => {
+    const i = info(r), [label, color] = STATE[r.state] || STATE.offline;
+    const fits = (i.seats ?? 999) >= people;
+    const short = r.id.split('.').pop();
+    const slots = (r.slots || []).map(([a, b]) =>
+      `<span style="left:${dayFrac(a) * 100}%;width:${Math.max(1, (dayFrac(b) - dayFrac(a)) * 100)}%"></span>`).join('');
+    return `<div class="room${fits ? '' : ' dim'}">
+      <div class="tile" style="--c: var(${color})">${esc(short)}</div>
+      <div class="id">${esc(r.id)}</div>
+      <div class="right"><span class="pill" style="--c: var(${color})">${label}</span>
+        <span class="detail${r.state === 'ghost' ? ' warn' : ''}">${fits ? esc(detail(r)) : 'too small for ' + people}</span></div>
+      <div class="meta">${i.seats ? i.seats + ' seats · ' : ''}floor ${i.floor}</div>
+      ${r.slots ? `<div class="bar" title="Today 07:00–22:00">${slots}<em style="left:${nowFrac * 100}%"></em></div>` : ''}
+    </div>`;
+  }).join('') || '<div class="empty">No rooms reported yet.</div>';
+
+  if (zTooltip) zTooltip.setContent(`Zentralgebäude · <span style="color:var(--free)">${free} free</span>`);
+}
+
+function renderConn() {
+  const p = $('conn');
+  const map = { live: ['Live', '--free'], connecting: ['Connecting', '--ghost'], offline: ['Offline', '--busy'], demo: ['Demo', '--accent2'] };
+  const [t, c] = map[connState];
+  p.textContent = t;
+  p.style.setProperty('--c', `var(${c})`);
+  p.classList.toggle('live', connState === 'live' || connState === 'demo');
+}
+
+/* ---- lost & found ----------------------------------------------------- */
+function fillLostFoundSelects() {
+  const ids = (building?.rooms || []).map(r => r.id);
+  const sel = $('lf-room');
+  if (sel.options.length - 1 !== ids.length) {
+    sel.innerHTML = '<option value="">Not sure</option>' + ids.map(id => `<option>${esc(id)}</option>`).join('');
+  }
+}
+$('lf-cat').innerHTML += Object.entries(CATS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+
+function whenText(ts) {
+  const d = new Date(ts * 1000), now = new Date();
+  if (d.toDateString() === now.toDateString()) return 'today ' + hm(d);
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'numeric' }) + ', ' + hm(d);
+}
+
+$('lf-go').onclick = () => {
+  const room = $('lf-room').value, cat = $('lf-cat').value, out = $('lf-res');
+  if (!lostfound) {
+    out.innerHTML = '<div class="empty">The lost &amp; found list isn’t online yet. Please ask at the desk.</div>';
+    return;
+  }
+  const hits = (lostfound.items || [])
+    .filter(i => (!room || i.room === room) && (!cat || i.cat === cat))
+    .sort((a, b) => b.ts - a.ts);
+  out.innerHTML = hits.length
+    ? `<div class="res-title">Good news: ${hits.length === 1 ? '1 possible match' : hits.length + ' possible matches'}</div>` +
+      hits.map(i => `<div class="item"><div class="ic">✓</div><div class="grow">${esc(CATS[i.cat] || i.cat)}
+        <small>found in ${esc(i.room)}</small></div><time>${whenText(i.ts)}</time></div>`).join('') +
+      '<div class="note" style="margin:4px 0 0">Ask at the Lost &amp; Found desk at the main entrance.</div>'
+    : `<div class="res-title">Nothing handed in yet</div>
+       <div class="note" style="margin:0">Items show up here as soon as someone registers them at the screen, so check again later.</div>`;
+};
+
+/* ---- map -------------------------------------------------------------- */
+const Z_OUTLINE = [[46.616200,14.265782],[46.616138,14.265792],[46.616137,14.265776],[46.616109,14.265410],[46.616108,14.265404],[46.616174,14.265393],[46.616172,14.265369],[46.616170,14.265346],[46.616148,14.265076],[46.616139,14.264961],[46.616137,14.264943],[46.616088,14.264951],[46.616066,14.264697],[46.616113,14.264688],[46.616103,14.264566],[46.616101,14.264543],[46.616100,14.264520],[46.616032,14.264532],[46.616031,14.264524],[46.616029,14.264503],[46.616001,14.264143],[46.616160,14.264117],[46.616178,14.264114],[46.616194,14.264111],[46.616271,14.264099],[46.616300,14.264473],[46.616349,14.264465],[46.616380,14.264460],[46.616381,14.264477],[46.616382,14.264487],[46.616384,14.264517],[46.616412,14.264880],[46.616413,14.264894],[46.616415,14.264913],[46.616417,14.264940],[46.616445,14.265301],[46.616447,14.265322],[46.616447,14.265330],[46.616450,14.265359],[46.616424,14.265363],[46.616379,14.265371],[46.616386,14.265450],[46.616408,14.265732],[46.616409,14.265747],[46.616397,14.265749],[46.616293,14.265766],[46.616200,14.265782]];
+let zTooltip = null;
+try {
+  const map = L.map('map', { zoomControl: false, attributionControl: true, scrollWheelZoom: false })
+    .setView([46.61625, 14.26505], 17);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  const z = L.polygon(Z_OUTLINE, { color: '#78A5FF', weight: 2, fillColor: '#3B7BFF', fillOpacity: .55 }).addTo(map);
+  zTooltip = L.tooltip({ permanent: true, direction: 'top', className: 'zlabel', offset: [0, -14] })
+    .setLatLng(z.getBounds().getCenter()).setContent('Zentralgebäude').addTo(map);
+} catch (e) { $('map').textContent = 'Map unavailable'; }
+
+/* ---- data sources ----------------------------------------------------- */
+function onBuilding(msg) {
+  building = msg;
+  receivedAt = Date.now();
+  fillLostFoundSelects();
+  render();
+}
+
+function connect() {
+  const client = mqtt.connect(CONFIG.brokerUrl, {
+    username: CONFIG.username, password: CONFIG.password,
+    reconnectPeriod: 3000, connectTimeout: 8000, clean: true,
+  });
+  const base = `inhabitx/${CONFIG.building}/`;
+  client.on('connect', () => {
+    connState = 'live'; renderConn();
+    client.subscribe([base + 'rooms', base + 'lostfound']);
+  });
+  client.on('reconnect', () => { connState = 'connecting'; renderConn(); });
+  client.on('offline', () => { connState = 'offline'; renderConn(); });
+  client.on('error', () => { connState = 'offline'; renderConn(); });
+  client.on('message', (topic, payload) => {
+    let msg;
+    try { msg = JSON.parse(payload.toString()); } catch { return; }
+    if (topic === base + 'rooms') onBuilding(msg);
+    else if (topic === base + 'lostfound') lostfound = msg;
+  });
+}
+
+/* Demo: looks like the master's simulator (Z.1.09 is a no-show that frees itself) */
+function demo() {
+  $('demo').style.display = 'block';
+  connState = 'demo'; renderConn();
+  const now = new Date(), t = s => s;
+  const hh = h => pad(h) + ':00';
+  const h = now.getHours();
+  let ghostLeft = 30, phase = 0;
+  const state = () => ({
+    ts: Math.floor(Date.now() / 1000),
+    rooms: [
+      { id: 'Z.1.08', state: 'occupied', until: hh(h + 1), slots: [[hh(h), hh(h + 1)]] },
+      phase === 0
+        ? { id: 'Z.1.09', state: 'ghost', release_in_s: ghostLeft, slots: [[hm(now), hh(h + 1)]] }
+        : { id: 'Z.1.09', state: 'free', slots: [] },
+      { id: 'Z.1.10', state: 'free', free_until: hh(h + 2), slots: [[hh(h + 2), hh(h + 3)]] },
+      { id: 'Z.1.11', state: 'occupied', slots: [] },
+      { id: 'Z.1.12', state: 'offline' },
+    ],
+  });
+  onBuilding(state());
+  setInterval(() => {
+    ghostLeft -= 5;
+    if (ghostLeft <= 0 && phase === 0) phase = 1;
+    onBuilding(state());
+  }, 5000);
+  lostfound = { ts: Math.floor(Date.now() / 1000), items: [
+    { room: 'Z.1.10', cat: 'umbrella', ts: Math.floor(Date.now() / 1000) - 3600 },
+    { room: 'Z.1.08', cat: 'phone', ts: Math.floor(Date.now() / 1000) - 2 * 86400 },
+  ] };
+}
+
+$('minus').onclick = () => { people = Math.max(1, people - 1); render(); };
+$('plus').onclick = () => { people = Math.min(60, people + 1); render(); };
+setInterval(render, 1000);   // countdowns + "updated x s ago"
+
+const forceDemo = new URLSearchParams(location.search).has('demo');
+if (!CONFIG.brokerUrl || forceDemo || typeof mqtt === 'undefined') demo();
+else { renderConn(); connect(); }
+</script>
+</body>
+</html>
