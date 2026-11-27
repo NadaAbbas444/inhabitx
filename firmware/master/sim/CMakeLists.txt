@@ -39,7 +39,9 @@ add_executable(master_sim
     ${UI_SRC})
 set(UI_HOR_RES 1024 CACHE STRING "screen width  (1024 = 7\"/10.1\", 800 = kit 4.3\")")
 set(UI_VER_RES 600  CACHE STRING "screen height (600 or 480)")
+set(GHOST_RELEASE_S 30 CACHE STRING "release a no-show booking after this many seconds (demo 30, real 600)")
 target_compile_definitions(master_sim PRIVATE UI_HOR_RES=${UI_HOR_RES} UI_VER_RES=${UI_VER_RES}
+    IX_GHOST_RELEASE_S=${GHOST_RELEASE_S}
     IX_SIM_DIR="${CMAKE_CURRENT_SOURCE_DIR}" MQTT_DO_NOT_USE_CUSTOM_CONFIG)
 target_include_directories(master_sim PRIVATE ../logic ../ui
     ${coremqtt_SOURCE_DIR}/source/include ${coremqtt_SOURCE_DIR}/source/interface)

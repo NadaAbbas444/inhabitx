@@ -384,8 +384,8 @@
 const CONFIG = {
   building: 'Z',
   brokerUrl: 'wss://inhabitx-46341c9d.a03.euc1.aws.hivemq.cloud:8884/mqtt',
-  readUser: 'web',  readPass: '',
-  sendUser: 'webhook', sendPass: '',
+  readUser: 'web',  readPass: 'inhabix0',
+  sendUser: 'webhook', sendPass: 'inhabix0',
   ghostMinutes: 10,         // must match IX_GHOST_RELEASE_S on the master
 };
 
@@ -661,7 +661,8 @@ $('b-email').onkeydown = e => { if (e.key === 'Enter') $('b-send').click(); };
 
 const ERRORS = { name: 'Please enter your name.', email: 'Please enter a valid email address.', time: 'Pick a time today, up to 4 hours long.',
   seats: 'This room is too small for your group.', overlap: 'Someone else has booked this room then.', busy: 'This room is in use right now. Pick a later start.',
-  limit: 'This email already has 2 active bookings.', full: 'No space for more bookings right now.', timeout: 'The building didn’t answer. Please try again or book at the screen.' };
+  limit: 'This email already has 2 active bookings.', full: 'No space for more bookings right now.',
+  room: 'This room is not known at the building.', cat: 'Please pick what you found.', timeout: 'The building didn’t answer. Please try again or book at the screen.' };
 
 $('b-send').onclick = async () => {
   const name = $('b-name').value.trim(), email = $('b-email').value.trim().toLowerCase();

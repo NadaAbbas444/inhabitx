@@ -20,6 +20,8 @@ cmake --build firmware/master/sim/build -j
 | `--conf FILE` | broker settings from another file (or set `IX_BROKER_CONF`) |
 | `--at HH:MM` | pretend it's that time today. Bookings only work between 07:00 and 22:00 |
 
+A booking nobody shows up for is released after 30 s (demo). For a test with real people (I2) build with the real 10 min: `cmake -S firmware/master/sim -B firmware/master/sim/build -DGHOST_RELEASE_S=600`.
+
 ## Broker
 
 The master logs in as `devices` (README §4). The password stays on the laptop:
