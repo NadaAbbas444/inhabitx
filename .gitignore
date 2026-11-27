@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.db
+# Node
+node_modules/
+dist/
+# ModusToolbox
+build/
+mtb_shared/
+# OS / editors
+.DS_Store
+.vscode/
