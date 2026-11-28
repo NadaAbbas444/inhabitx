@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-28",
+  "target": "APP_KIT_PSE84_EVAL_EPC2",
+  "inference_cpu": "CM55",
+  "model": "conv2d-small-balanced-0",
+  "generated_files_byte_identical_to_esp32": true,
+  "model_sha256": {
+    "model.c": "9373272c47f3da920ecb846b78fced4715326038582330c26ce2286d7a2f0d1f",
+    "model.h": "a72f0b1bec76eb04e246494b913156dd83de335bf710450d4068032e32ab3324"
+  },
+  "host_tests": {
+    "compiler": "MSVC 14.44, C11, O2",
+    "occupancy_policy_and_queue": "passed",
+    "real_generated_model_streaming_and_reset": "passed: 64000 samples/run, 6 outputs/run, two deterministic runs",
+    "pipeline_simulated_pdm_and_fault_recovery": "passed"
+  },
+  "arm_target_syntax_audio_and_main": "passed against the supplied E84 BSP/PDL headers using Clang 14",
+  "target_compile_and_link": "pending",
+  "target_build_blocker": "The session cannot launch Arm GCC: Windows Illegal System DLL Relocation. Normal user modus-shell can run it.",
+  "classroom_binaries_available": false,
+  "hardware_tested": false,
+  "network_transport": "UART JSON; Wi-Fi/MQTT not integrated",
+  "historical_binaries": "artifacts/baseline-audio-demo/",
+  "arm_target_syntax_model": "passed: Clang 14 ARM target parsing, 0 errors (refactoring checks restricted to comment line)"
+}

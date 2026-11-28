@@ -1,9 +1,9 @@
 {
   "snapshot_date": "2026-11-28",
+  "model": "classroom occupancy: unlabeled / background / human_activity",
   "target": "APP_KIT_PSE84_EVAL_EPC2",
-  "configuration": "Debug",
-  "toolchain": "GCC_ARM 14.2.1",
-  "model": "DEEPCRAFT demonstration: unlabelled / baby_cry",
+  "target_build": "pending user modus-shell build",
+  "historical_artifacts": "baseline baby-cry demo only",
   "files": [
     {
       "path": "mtw/Inhabix/.cyignore",
@@ -55,9 +55,9 @@
     },
     {
       "path": "mtw/Inhabix/README.md",
-      "bytes": 14049,
-      "sha256": "1508ac8149090514261bde73bc87ade3d3b7cd09eeed941d02f3da870afcbf06",
-      "git_blob_sha1": "5a3560d074e32ea12da8c9dd15caa5f250014d49"
+      "bytes": 487,
+      "sha256": "d11b159f00337fe54d6e5281ceac52a75010cbabda505bab83920b0a34aa92d2",
+      "git_blob_sha1": "ba073d9226bac2d7c301babdc0a8f485371a2b38"
     },
     {
       "path": "mtw/Inhabix/version.xml",
@@ -775,9 +775,9 @@
     },
     {
       "path": "mtw/Inhabix/proj_cm33_ns/audio.c",
-      "bytes": 12756,
-      "sha256": "4b8d0e5a96d1a4d16e31097a78ac4579c9e7471e659efdaf567f14dddac2a3f3",
-      "git_blob_sha1": "15141478eb70dd766fc0eff3b390b669c7eb6ae0"
+      "bytes": 2310,
+      "sha256": "5b0f6976c38a1c056de1dc458e2c4d4b7af2dceb420fbb21ff09b253c072e7bb",
+      "git_blob_sha1": "3495d5d0870b7929cfa52700f884ece7d5001f29"
     },
     {
       "path": "mtw/Inhabix/proj_cm33_ns/audio.h",
@@ -793,9 +793,9 @@
     },
     {
       "path": "mtw/Inhabix/proj_cm33_ns/Makefile",
-      "bytes": 5837,
-      "sha256": "c80bc3a067b90c56a969b6cabd8374062831e72852bafeed49ca04019c23772e",
-      "git_blob_sha1": "6f5c990b942cc01f299aed556bab7497ca062fa1"
+      "bytes": 5846,
+      "sha256": "44ff6aaa6b9d7311db1935504191264996ab6adef8f68ee26f3798b12a56e208",
+      "git_blob_sha1": "8777e67ff0c033541ac19e4507ee42513366f9f4"
     },
     {
       "path": "mtw/Inhabix/proj_cm33_ns/openocd.tcl",
@@ -847,15 +847,15 @@
     },
     {
       "path": "mtw/Inhabix/proj_cm33_ns/model/model.c",
-      "bytes": 368251,
-      "sha256": "bdf4d0eef489e98cdfcf834d992aae8ef15a3315760118d8e26e6e67a8cb0a1b",
-      "git_blob_sha1": "2d1b9c5b846c0973418ffee9c2a3fa922066a9ec"
+      "bytes": 206678,
+      "sha256": "9373272c47f3da920ecb846b78fced4715326038582330c26ce2286d7a2f0d1f",
+      "git_blob_sha1": "6e129e71267dd068fe89bbf4f3cf3f4a5e11b48b"
     },
     {
       "path": "mtw/Inhabix/proj_cm33_ns/model/model.h",
-      "bytes": 6767,
-      "sha256": "f01929e77b247f910f7196c865c85980270a5843b769a3914e310179b40e7886",
-      "git_blob_sha1": "3d6b0e0092904d5ebbbdabf7fa4eb6712a6b8c5d"
+      "bytes": 14976,
+      "sha256": "a72f0b1bec76eb04e246494b913156dd83de335bf710450d4068032e32ab3324",
+      "git_blob_sha1": "c3819327f94619c777847de2c6d266f675326b3f"
     },
     {
       "path": "mtw/Inhabix/proj_cm33_s/main.c",
@@ -895,9 +895,9 @@
     },
     {
       "path": "mtw/Inhabix/proj_cm55/audio.c",
-      "bytes": 12756,
-      "sha256": "4b8d0e5a96d1a4d16e31097a78ac4579c9e7471e659efdaf567f14dddac2a3f3",
-      "git_blob_sha1": "15141478eb70dd766fc0eff3b390b669c7eb6ae0"
+      "bytes": 2310,
+      "sha256": "5b0f6976c38a1c056de1dc458e2c4d4b7af2dceb420fbb21ff09b253c072e7bb",
+      "git_blob_sha1": "3495d5d0870b7929cfa52700f884ece7d5001f29"
     },
     {
       "path": "mtw/Inhabix/proj_cm55/audio.h",
@@ -913,9 +913,9 @@
     },
     {
       "path": "mtw/Inhabix/proj_cm55/Makefile",
-      "bytes": 5846,
-      "sha256": "64f9cbfec1a50cdb8c483e03a8846fab66a7d4d53f133798272140a9ddcb3698",
-      "git_blob_sha1": "d6886e123cc0a9f5e1d5a82559ef8368573ab9be"
+      "bytes": 5855,
+      "sha256": "5b651ae65c8b8f4fa56c5bbeda52854761c579d2fbe4343a738bca7d0b373ab9",
+      "git_blob_sha1": "f1da5523e196a1dda4bc0445dfb16ea5a04e4947"
     },
     {
       "path": "mtw/Inhabix/proj_cm55/openocd.tcl",
@@ -967,93 +967,177 @@
     },
     {
       "path": "mtw/Inhabix/proj_cm55/model/model.c",
-      "bytes": 349292,
-      "sha256": "3ee57b31d3464072eb543b3818f9bea55927a29a9d4a44c80eb289d3eb5b43ac",
-      "git_blob_sha1": "5e7f6bdbc14befdb8ea79fd64399c185aea92aef"
+      "bytes": 206678,
+      "sha256": "9373272c47f3da920ecb846b78fced4715326038582330c26ce2286d7a2f0d1f",
+      "git_blob_sha1": "6e129e71267dd068fe89bbf4f3cf3f4a5e11b48b"
     },
     {
       "path": "mtw/Inhabix/proj_cm55/model/model.h",
-      "bytes": 6798,
-      "sha256": "4bb69e88731ead5b0192e788ae88515606ce1be138c0e950437fc9a7c39e0d66",
-      "git_blob_sha1": "4fbd213b09883dd08351747bc65389c7cb047fb0"
+      "bytes": 14976,
+      "sha256": "a72f0b1bec76eb04e246494b913156dd83de335bf710450d4068032e32ab3324",
+      "git_blob_sha1": "c3819327f94619c777847de2c6d266f675326b3f"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_s.bin",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_s.bin",
       "bytes": 29752,
       "sha256": "ff5b18c84abdcf25aac9ea670c782eaed485b71b644f83288092c0e2001a53cb",
       "git_blob_sha1": "98441c9236731519e36757e4cceeb2bb67532ca5"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_s.elf",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_s.elf",
       "bytes": 728340,
       "sha256": "6548cd4b1e557902b0017dc5b999211778fbf2e4b7772931173668ba15e7e6ff",
       "git_blob_sha1": "cca8e544a1bd3396f7a0994292a6be5442ecd489"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_s.hex",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_s.hex",
       "bytes": 80979,
       "sha256": "65f1265137d601cd0e7733916bc5e7b1d9424d55974a5c15544e6551f148eb72",
       "git_blob_sha1": "168b90a00af5f52f07f3dbd4a370f61f85d3d8b4"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_ns.bin",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_ns.bin",
       "bytes": 298344,
       "sha256": "404f8197bcbb4b5f894eeaadee6087eb9422a25e628e8bb277718d739e256c0a",
       "git_blob_sha1": "63545ac6cc1c3ca3fba717b160c2abf9f8005149"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_ns.elf",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_ns.elf",
       "bytes": 2166616,
       "sha256": "c9d5f3d432b737f4da32c2bad58c7d37ca105ad36ffba318759e8f84c033ee12",
       "git_blob_sha1": "9d6b15690db572dbd6dc8f222c2a3d67ab904738"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_ns.hex",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_ns.hex",
       "bytes": 839244,
       "sha256": "d2295015044475698e6c5846629104b72fd68c70a1fa22763cf2ab589193415c",
       "git_blob_sha1": "adb3cad43d691e08078ea660ba796f511a1c4b5d"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm55.bin",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm55.bin",
       "bytes": 482900,
       "sha256": "3004a00ab904d6ae92d1bb0a70c508270ae02703c4ce61d61ba3abbd33aa9ba8",
       "git_blob_sha1": "d6ede4c30b926626acce56f73fd00a48f24dcd02"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm55.elf",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm55.elf",
       "bytes": 2734352,
       "sha256": "43988803bd87ba35cbe8aebb1da395c48185e71f2338eadd743b4a322c3eee40",
       "git_blob_sha1": "935ca8f3e87041497f1c5afa3386bdeb83a201ff"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm55.hex",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm55.hex",
       "bytes": 1358375,
       "sha256": "fa9e62b5bba6df67542e208e20c49524221e6b969a485b23315c4a933a185c41",
       "git_blob_sha1": "d157b0672de5dc638365cf74dafc7cac51d83b38"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/app_combined.hex",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/app_combined.hex",
       "bytes": 2284207,
       "sha256": "f3e72f6c02c8402de0b409d33c10e5ae47dfaade28967407d6c577f54021cdd0",
       "git_blob_sha1": "3e825d92399da2eda51a9c3c1e441528e6afec08"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/memreport.txt",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/memreport.txt",
       "bytes": 8269,
       "sha256": "e5a8c25e92e058f8f4955d5bac491e8b4587604bb0a638b17810f8386c031e32",
       "git_blob_sha1": "17636b4a7ab1e261c1ffa7b39c1b6cd50ed1b723"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/memreport.json",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/memreport.json",
       "bytes": 27812,
       "sha256": "0240915f272ac8aecd014996eba5ebdc40e157384381d0ccf3957803a1da2a67",
       "git_blob_sha1": "ee8f48104fbbe49e02f67c1e205c27e95996851d"
     },
     {
-      "path": "mtw/artifacts/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_s_signed.hex",
+      "path": "mtw/artifacts/baseline-audio-demo/APP_KIT_PSE84_EVAL_EPC2/Debug/proj_cm33_s_signed.hex",
       "bytes": 86721,
       "sha256": "4bef25ab38bd5a77384770f1618096b3fffe8fa4bf864036a4c4f7db3389452b",
       "git_blob_sha1": "5b08def6da9c7ad4be384144d9d6edaa615e0ab4"
+    },
+    {
+      "path": "mtw/README.md",
+      "bytes": 5346,
+      "sha256": "b7b51c5e5b988be21c1e19ee9d522c46aefdd682d93b586c0a12f4de680e4858",
+      "git_blob_sha1": "967ceb0d8791a1d154b7637a9f9f5f56a81435e0"
+    },
+    {
+      "path": "mtw/verification.json",
+      "bytes": 1277,
+      "sha256": "f0de344157f0d92f7d425837fac1646ec13d4e3489a15c72064de002f4f15f5b",
+      "git_blob_sha1": "016f30e0a687103c204bd65cbe989af25a6101eb"
+    },
+    {
+      "path": "mtw/Inhabix/README.upstream.md",
+      "bytes": 14049,
+      "sha256": "1508ac8149090514261bde73bc87ade3d3b7cd09eeed941d02f3da870afcbf06",
+      "git_blob_sha1": "5a3560d074e32ea12da8c9dd15caa5f250014d49"
+    },
+    {
+      "path": "mtw/Inhabix/shared/audio_queue.h",
+      "bytes": 1382,
+      "sha256": "591e501e808842115bef79644a7e27023c00a8728762a3c4081f46525211e0dd",
+      "git_blob_sha1": "a173b47d8a3260630974ab8e764797c91b3a1c67"
+    },
+    {
+      "path": "mtw/Inhabix/shared/occupancy_audio.h",
+      "bytes": 10379,
+      "sha256": "fb6e62f4435744e0ffd7090160ca176da01df4afb322a43fee8f3bcb741e1b5e",
+      "git_blob_sha1": "d0b8bed69dc6996d1b30e70f11a9da9dbde00cfe"
+    },
+    {
+      "path": "mtw/Inhabix/shared/occupancy_filter.h",
+      "bytes": 1862,
+      "sha256": "ad6309364a69e27fe343a0169f90177c318c81233c73b5a2d8876587c64aab07",
+      "git_blob_sha1": "b31f9aade48f1a781270538346f7d69f1294c93d"
+    },
+    {
+      "path": "mtw/tests/.gitignore",
+      "bytes": 13,
+      "sha256": "b33aab9f97a357ac31a195946e717d25c55c3e143b279e4e677424ec134c1164",
+      "git_blob_sha1": "39a0021ef770ed36a0ff03c6d77bb68a107f8de2"
+    },
+    {
+      "path": "mtw/tests/model_test.c",
+      "bytes": 1290,
+      "sha256": "c8f708081ee9fee98556e3c9d74cc8528161f31449cd92d0284b83b57ea523ec",
+      "git_blob_sha1": "3c37cca216cb0f7b898e94f871d1a4eff830acdd"
+    },
+    {
+      "path": "mtw/tests/occupancy_test.c",
+      "bytes": 3536,
+      "sha256": "dcddd7da08a052aed58516573311764de15ef03f7cb7cac838866183db47d909",
+      "git_blob_sha1": "4ae41e39c16071492df106901185ad25d03dc805"
+    },
+    {
+      "path": "mtw/tests/pipeline_test.c",
+      "bytes": 2207,
+      "sha256": "cbca38c5c7f14ab7ac55b9f3a552ed47471d6b7a4aad95c3233089f35910f636",
+      "git_blob_sha1": "15d47953d4a38324fa1e2f25b67b5ff56cb00886"
+    },
+    {
+      "path": "mtw/tests/run-msvc.ps1",
+      "bytes": 1157,
+      "sha256": "33faf72d21bc1a07e4f12df2a697a80847b21c17bff2a3334eb90c42efdb524e",
+      "git_blob_sha1": "cfe9b5667c8918e4c631559d81284aa7aab4b7ea"
+    },
+    {
+      "path": "mtw/tests/mock/audio.h",
+      "bytes": 616,
+      "sha256": "775f60f5f798ac158efabd27f619517c35dbd6ac7349dae17f047966fddf42ae",
+      "git_blob_sha1": "0fb1e2ebf1e775a4bc3146373bcb97924850ee16"
+    },
+    {
+      "path": "mtw/tests/mock/cy_pdl.h",
+      "bytes": 19,
+      "sha256": "2a54b5c5e5b532c59b170777876e1b0d6e82ef31b82be8add38da4dd98c7ba33",
+      "git_blob_sha1": "ab68d27ebd0522c9c1cd1642a27b67452b5e6c85"
+    },
+    {
+      "path": "mtw/tests/mock/cybsp.h",
+      "bytes": 2767,
+      "sha256": "573c3158a1a7dd2bb5d1cc32b2d32b9c09788cb433912f6ef6212df5734a369d",
+      "git_blob_sha1": "df0de0c1c2c359afcd05b1f55c387829b6f95801"
     }
   ]
 }

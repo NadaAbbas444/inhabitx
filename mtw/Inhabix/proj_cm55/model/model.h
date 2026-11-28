@@ -1,34 +1,153 @@
 /*
-* ImagiNet Compiler 5.5.3417.65534+eec6da02588e3e83732ce489840158da4d7ee938
+* DEEPCRAFT Studio 5.16.7527.0+cda5e80bc6d2ff8f9dd9f30a82f9ad44f49da0e3
 * Copyright © 2023- Imagimob AB, All Rights Reserved.
 * 
-* Generated at 08/20/2025 05:44:03 UTC. Any changes will be lost.
+* Generated at 11/27/2026 22:42:48 UTC. Any changes will be lost.
 * 
-* Model ID  bac40391-2938-41b3-8a6a-6f93df208633
+* Model ID  e48a1b9d-548a-41c8-860a-86ac08e95c34
 * 
 * Memory    Size                      Efficiency
-* Buffers   14360 bytes (RAM)         86 %
-* State     47264 bytes (RAM)         100 %
-* Readonly  103032 bytes (Flash)      100 %
+* Buffers   76800 bytes (RAM)         100 %
+* State     9992 bytes (RAM)          100 %
+* Readonly  34308 bytes (Flash)       100 %
+* 
+* Backend              tensorflow
+* Keras Version        2.15.0
+* Backend Model Type   Sequential
+* Backend Model Name   conv2d-small-balanced-0
+* 
+* Class Index | Symbol Label
+* 0           | unlabeled
+* 1           | background
+* 2           | human_activity
+* 
+* Layer                          Shape           Type       Function
+* Sliding Window (data points)   [512]           float      dequeue
+*    window_shape = [512]
+*    stride = 320
+*    buffer_multiplier = 1
+* Hamming smoothing              [512]           float      dequeue
+*    sym = True
+* Real Discrete Fourier Transform [257,2]         float      dequeue
+*    axis = 0
+* Frobenius norm                 [257]           float      dequeue
+*    axis = 0
+* Mel Filterbank                 [32]            float      dequeue
+*    num_filters = 32
+*    sample_rate = 16000
+*    f_low = 100
+*    f_high = 8000
+* Add Constant                   [32]            float      dequeue
+*    A = 1
+* Logarithm                      [32]            float      dequeue
+* Clip                           [32]            float      dequeue
+*    min = 0
+*    max = 4
+* Imagimob Speech Features       [32]            float      dequeue
+*    output_freq = 50
+*    output_features = 32
+*    low_cut_freq = 100
+*    high_cut_freq = 8000
+* Sliding Window (data points)   [50,32]         float      dequeue
+*    window_shape = [50,32]
+*    stride = 800
+*    buffer_multiplier = 1
+* Contextual Window (Sliding Window) [50,32]         float      dequeue
+*    contextual_length_sec = 1
+*    prediction_freq = 2
+* Input Layer                    [50,32]         float      dequeue
+*    shape = [50,32]
+* Reshape                        [50,32,1]       float      dequeue
+*    shape = [50,32,1]
+*    trainable = True
+* Convolution 2D                 [25,16,12]      float      dequeue
+*    filters = 12
+*    kernel_size = [3,3]
+*    strides = [2,2]
+*    padding = same
+*    activation = linear
+*    use_bias = False
+*    trainable = True
+*    weight = float[3,3,1,12]
+* Batch Normalization            [25,16,12]      float      dequeue
+*    epsilon = 0.001
+*    trainable = True
+*    scale = True
+*    center = True
+*    axis = 3
+*    gamma = float[12]
+*    beta = float[12]
+*    mean = float[12]
+*    variance = float[12]
+* Activation                     [25,16,12]      float      dequeue
+*    activation = relu
+*    trainable = True
+* Convolution 2D                 [25,16,24]      float      dequeue
+*    filters = 24
+*    kernel_size = [3,3]
+*    strides = [1,1]
+*    padding = same
+*    activation = linear
+*    use_bias = False
+*    trainable = True
+*    weight = float[3,3,12,24]
+* Activation                     [25,16,24]      float      dequeue
+*    activation = relu
+*    trainable = True
+* Convolution 2D                 [25,16,24]      float      dequeue
+*    filters = 24
+*    kernel_size = [3,3]
+*    strides = [1,1]
+*    padding = same
+*    activation = linear
+*    use_bias = False
+*    trainable = True
+*    weight = float[3,3,24,24]
+* Batch Normalization            [25,16,24]      float      dequeue
+*    epsilon = 0.001
+*    trainable = True
+*    scale = True
+*    center = True
+*    axis = 3
+*    gamma = float[24]
+*    beta = float[24]
+*    mean = float[24]
+*    variance = float[24]
+* Activation                     [25,16,24]      float      dequeue
+*    activation = relu
+*    trainable = True
+* Max pooling 2D                 [12,8,24]       float      dequeue
+*    pool_size = [2,2]
+*    strides = [2,2]
+*    padding = valid
+*    trainable = True
+* Dropout                        [12,8,24]       float      dequeue
+*    rate = 0.05
+*    trainable = True
+* Global average pooling 2D      [24]            float      dequeue
+* Dense                          [3]             float      dequeue
+*    units = 3
+*    use_bias = True
+*    activation = linear
+*    trainable = True
+*    weight = float[24,3]
+*    bias = float[3]
+* Activation                     [3]             float      dequeue
+*    activation = softmax
+*    trainable = True
 * 
 * Exported functions:
 * 
-*  @description: Try read data from model.
-*  @param data_out Output features. Output float[2].
-*  @return IPWIN_RET_SUCCESS (0) or IPWIN_RET_NODATA (-1), IPWIN_RET_ERROR (-2), IPWIN_RET_STREAMEND (-3)
-*  int IMAI_dequeue(float *data_out);
+* int IMAI_dequeue(float *restrict data_out)
+*    Description: Dequeue features. RET_SUCCESS (0) on success, RET_NODATA (-1) if no data is available, RET_NOMEM (-2) on internal memory error
+*    Parameter data_out is Output of size float[3].
 * 
-*  @description: Try write data to model.
-*  @param data_in Input features. Input float[1].
-*  @return IPWIN_RET_SUCCESS (0) or IPWIN_RET_NODATA (-1), IPWIN_RET_ERROR (-2), IPWIN_RET_STREAMEND (-3)
-*  int IMAI_enqueue(const float *data_in);
+* int IMAI_enqueue(const float *restrict data_in)
+*    Description: Enqueue features. Returns SUCCESS (0) on success, else RET_NOMEM (-2) when low on memory.
+*    Parameter data_in is Input of size float[1].
 * 
-*  @description: Closes and flushes streams, free any heap allocated memory.
-*  void IMAI_finalize(void);
-* 
-*  @description: Initializes buffers to initial state.
-*  @return IPWIN_RET_SUCCESS (0) or IPWIN_RET_NODATA (-1), IPWIN_RET_ERROR (-2), IPWIN_RET_STREAMEND (-3)
-*  int IMAI_init(void);
+* void IMAI_init(void)
+*    Description: Initializes buffers to initial state. This function also works as a reset function.
 * 
 * 
 * Disclaimer:
@@ -37,195 +156,189 @@
 *   This can only be done if the functions are inlined and simplified.
 *   Check disassembly if unsure.
 *   tl;dr Compile using gcc with -O3 or -Ofast
-* 
-* Notes:
-*     -> This code was generated with DEEPCRAFT Studio using:
-*         ml-coretools 3.0.0.8583.
-*         tensorflow 2.15.0.
-*         ethos-u-vela 3.11.0.
-*     -> This code requires the following Modus Toolbox libraries (add them to your
-*     project using the Library Manager):
-*         ml-middleware 3.1.0.
-*         ml-tflite-micro 3.1.0.
-*     -> This code requires the Modus Toolbox PSOC Edge E84 Early Access Pack (EAP)
-*     version 0.3.2.5362.
 */
 
-#include <stdbool.h>
+#ifndef _IMAI_MODEL_H_
+#define _IMAI_MODEL_H_
+#ifdef _MSC_VER
+#pragma once
+#endif
+
 #include <stdint.h>
-#include "mtb_ml_model.h"
+
+typedef struct {    
+    char *name;
+    double TP; // True Positive or Correct Positive Prediction
+    double FN; // False Negative or Incorrect Negative Prediction
+    double FP; // False Positive or Incorrect Positive Prediction
+    double TN; // True Negative or Correct Negative Prediction
+    double TPR; // True Positive Rate or Sensitivity, Recall
+    double TNR; // True Negative Rate or Specificity, Selectivity
+    double PPV; // Positive Predictive Value or Precision
+    double NPV; // Negative Predictive Value
+    double FNR; // False Negative Rate or Miss Rate
+    double FPR; // False Positive Rate or Fall-Out
+    double FDR; // False Discovery Rate
+    double FOR; // False Omission Rate
+    double F1S; // F1 Score
+} IMAI_stats;
+
+/*
+* Tensorflow Test Set
+* 
+* (ACC) Accuracy 94.318 %
+* (F1S) F1 Score 94.313 %
+* 
+* Name of class                                               unlabeled       background   human_activity
+* (TP) True Positive or Correct Positive Prediction                   0              214              201
+* (FN) False Negative or Incorrect Negative Prediction                0                6               19
+* (FP) False Positive or Incorrect Positive Prediction                0               19                6
+* (TN) True Negative or Correct Negative Prediction                 440              201              214
+* (TPR) True Positive Rate or Sensitivity, Recall              100.00 %          97.27 %          91.36 %
+* (TNR) True Negative Rate or Specificity, Selectivity         100.00 %          91.36 %          97.27 %
+* (PPV) Positive Predictive Value or Precision                 100.00 %          91.85 %          97.10 %
+* (NPV) Negative Predictive Value                              100.00 %          97.10 %          91.85 %
+* (FNR) False Negative Rate or Miss Rate                       100.00 %           2.73 %           8.64 %
+* (FPR) False Positive Rate or Fall-Out                          0.00 %           8.64 %           2.73 %
+* (FDR) False Discovery Rate                                   100.00 %           8.15 %           2.90 %
+* (FOR) False Omission Rate                                      0.00 %           2.90 %           8.15 %
+* (F1S) F1 Score                                               100.00 %          94.48 %          94.15 %
+*/
+
+
+#define IMAI_TEST_AVG_ACC 0.9431818181818182 // Accuracy
+#define IMAI_TEST_AVG_F1S 0.9431321763316118 // F1 Score
+
+#define IMAI_TEST_STATS { \
+ {name: "unlabeled", TP: 0, FN: 0, FP: 0, TN: 440, TPR: 1, TNR: 1, PPV: 1, NPV: 1, FNR: 1, FPR: 0, FDR: 1, FOR: 0, F1S: 1, }, \
+ {name: "background", TP: 214, FN: 6, FP: 19, TN: 201, TPR: 0.9727272727272, TNR: 0.9136363636363, PPV: 0.9184549356223, NPV: 0.9710144927536, FNR: 0.0272727272727, FPR: 0.0863636363636, FDR: 0.0815450643776, FOR: 0.0289855072463, F1S: 0.9448123620309, }, \
+ {name: "human_acti...", TP: 201, FN: 19, FP: 6, TN: 214, TPR: 0.9136363636363, TNR: 0.9727272727272, PPV: 0.9710144927536, NPV: 0.9184549356223, FNR: 0.0863636363636, FPR: 0.0272727272727, FDR: 0.0289855072463, FOR: 0.0815450643776, F1S: 0.9414519906323, }, \
+}
+
+#ifdef IMAI_STATS_ENABLED
+static const IMAI_stats IMAI_test_stats[] = IMAI_TEST_STATS;
+#endif
+
+/*
+* Tensorflow Train Set
+* 
+* (ACC) Accuracy 96.094 %
+* (F1S) F1 Score 96.088 %
+* 
+* Name of class                                               unlabeled       background   human_activity
+* (TP) True Positive or Correct Positive Prediction                   0              640              590
+* (FN) False Negative or Incorrect Negative Prediction                0                0               50
+* (FP) False Positive or Incorrect Positive Prediction                0               50                0
+* (TN) True Negative or Correct Negative Prediction                1280              590              640
+* (TPR) True Positive Rate or Sensitivity, Recall              100.00 %         100.00 %          92.19 %
+* (TNR) True Negative Rate or Specificity, Selectivity         100.00 %          92.19 %         100.00 %
+* (PPV) Positive Predictive Value or Precision                 100.00 %          92.75 %         100.00 %
+* (NPV) Negative Predictive Value                              100.00 %         100.00 %          92.75 %
+* (FNR) False Negative Rate or Miss Rate                       100.00 %           0.00 %           7.81 %
+* (FPR) False Positive Rate or Fall-Out                          0.00 %           7.81 %           0.00 %
+* (FDR) False Discovery Rate                                   100.00 %           7.25 %           0.00 %
+* (FOR) False Omission Rate                                      0.00 %           0.00 %           7.25 %
+* (F1S) F1 Score                                               100.00 %          96.24 %          95.93 %
+*/
+
+
+#define IMAI_TRAIN_AVG_ACC 0.9609375 // Accuracy
+#define IMAI_TRAIN_AVG_F1S 0.9608778042667645 // F1 Score
+
+#define IMAI_TRAIN_STATS { \
+ {name: "unlabeled", TP: 0, FN: 0, FP: 0, TN: 1280, TPR: 1, TNR: 1, PPV: 1, NPV: 1, FNR: 1, FPR: 0, FDR: 1, FOR: 0, F1S: 1, }, \
+ {name: "background", TP: 640, FN: 0, FP: 50, TN: 590, TPR: 1, TNR: 0.921875, PPV: 0.9275362318840, NPV: 1, FNR: 0, FPR: 0.078125, FDR: 0.0724637681159, FOR: 0, F1S: 0.9624060150375, }, \
+ {name: "human_acti...", TP: 590, FN: 50, FP: 0, TN: 640, TPR: 0.921875, TNR: 1, PPV: 1, NPV: 0.9275362318840, FNR: 0.078125, FPR: 0, FDR: 0, FOR: 0.0724637681159, F1S: 0.9593495934959, }, \
+}
+
+#ifdef IMAI_STATS_ENABLED
+static const IMAI_stats IMAI_train_stats[] = IMAI_TRAIN_STATS;
+#endif
+
+/*
+* Tensorflow Validation Set
+* 
+* (ACC) Accuracy 93.119 %
+* (F1S) F1 Score 93.114 %
+* 
+* Name of class                                               unlabeled       background   human_activity
+* (TP) True Positive or Correct Positive Prediction                   0              209              197
+* (FN) False Negative or Incorrect Negative Prediction                0                9               21
+* (FP) False Positive or Incorrect Positive Prediction                0               21                9
+* (TN) True Negative or Correct Negative Prediction                 436              197              209
+* (TPR) True Positive Rate or Sensitivity, Recall              100.00 %          95.87 %          90.37 %
+* (TNR) True Negative Rate or Specificity, Selectivity         100.00 %          90.37 %          95.87 %
+* (PPV) Positive Predictive Value or Precision                 100.00 %          90.87 %          95.63 %
+* (NPV) Negative Predictive Value                              100.00 %          95.63 %          90.87 %
+* (FNR) False Negative Rate or Miss Rate                       100.00 %           4.13 %           9.63 %
+* (FPR) False Positive Rate or Fall-Out                          0.00 %           9.63 %           4.13 %
+* (FDR) False Discovery Rate                                   100.00 %           9.13 %           4.37 %
+* (FOR) False Omission Rate                                      0.00 %           4.37 %           9.13 %
+* (F1S) F1 Score                                               100.00 %          93.30 %          92.92 %
+*/
+
+
+#define IMAI_VALIDATION_AVG_ACC 0.9311926605504587 // Accuracy
+#define IMAI_VALIDATION_AVG_F1S 0.9311404986522911 // F1 Score
+
+#define IMAI_VALIDATION_STATS { \
+ {name: "unlabeled", TP: 0, FN: 0, FP: 0, TN: 436, TPR: 1, TNR: 1, PPV: 1, NPV: 1, FNR: 1, FPR: 0, FDR: 1, FOR: 0, F1S: 1, }, \
+ {name: "background", TP: 209, FN: 9, FP: 21, TN: 197, TPR: 0.9587155963302, TNR: 0.9036697247706, PPV: 0.9086956521739, NPV: 0.9563106796116, FNR: 0.0412844036697, FPR: 0.0963302752293, FDR: 0.0913043478260, FOR: 0.0436893203883, F1S: 0.9330357142857, }, \
+ {name: "human_acti...", TP: 197, FN: 21, FP: 9, TN: 209, TPR: 0.9036697247706, TNR: 0.9587155963302, PPV: 0.9563106796116, NPV: 0.9086956521739, FNR: 0.0963302752293, FPR: 0.0412844036697, FDR: 0.0436893203883, FOR: 0.0913043478260, F1S: 0.9292452830188, }, \
+}
+
+#ifdef IMAI_STATS_ENABLED
+static const IMAI_stats IMAI_validation_stats[] = IMAI_VALIDATION_STATS;
+#endif
+
 #define IMAI_API_QUEUE
 
-typedef int8_t q7_t;         // 8-bit fractional data type in Q1.7 format.
-typedef int16_t q15_t;       // 16-bit fractional data type in Q1.15 format.
-typedef int32_t q31_t;       // 32-bit fractional data type in Q1.31 format.
-typedef int64_t q63_t;       // 64-bit fractional data type in Q1.63 format.
+// All symbols in order
+#define IMAI_SYMBOL_MAP {"unlabeled", "background", "human_activity"}
 
 // Model GUID (16 bytes)
-#define IMAI_MODEL_ID {0x91, 0x03, 0xc4, 0xba, 0x38, 0x29, 0xb3, 0x41, 0x8a, 0x6a, 0x6f, 0x93, 0xdf, 0x20, 0x86, 0x33}
-
+#define IMAI_MODEL_ID {0x9d, 0x1b, 0x8a, 0xe4, 0x8a, 0x54, 0xc8, 0x41, 0x86, 0x0a, 0x86, 0xac, 0x08, 0xe9, 0x5c, 0x34}
 
 // First nibble is bit encoding, second nibble is number of bytes
-#define IMAGINET_TYPES_NONE    (0x0)
-#define IMAGINET_TYPES_FLOAT32    (0x14)
-#define IMAGINET_TYPES_FLOAT64    (0x18)
-#define IMAGINET_TYPES_INT8    (0x21)
-#define IMAGINET_TYPES_INT16    (0x22)
-#define IMAGINET_TYPES_INT32    (0x24)
-#define IMAGINET_TYPES_INT64    (0x28)
-#define IMAGINET_TYPES_Q7    (0x31)
-#define IMAGINET_TYPES_Q15    (0x32)
-#define IMAGINET_TYPES_Q31    (0x34)
-#define IMAGINET_TYPES_BOOL    (0x41)
-#define IMAGINET_TYPES_STRING    (0x54)
-#define IMAGINET_TYPES_D8    (0x61)
-#define IMAGINET_TYPES_D16    (0x62)
-#define IMAGINET_TYPES_D32    (0x64)
-#define IMAGINET_TYPES_UINT8    (0x71)
-#define IMAGINET_TYPES_UINT16    (0x72)
-#define IMAGINET_TYPES_UINT32    (0x74)
-#define IMAGINET_TYPES_UINT64    (0x78)
-
-// data_out [2] (8 bytes)
-#define IMAI_DATA_OUT_RANK (1)
-#define IMAI_DATA_OUT_SHAPE (((int[]){2})
-#define IMAI_DATA_OUT_COUNT (2)
-#define IMAI_DATA_OUT_TYPE float
-#define IMAI_DATA_OUT_TYPE_ID IMAGINET_TYPES_FLOAT32
-#define IMAI_DATA_OUT_SHIFT 4
-#define IMAI_DATA_OUT_OFFSET 0
-#define IMAI_DATA_OUT_SCALE 1
-#define IMAI_DATA_OUT_SYMBOLS {"unlabelled", "baby_cry"}
+#define IMAGINET_TYPES_NONE	(0x0)
+#define IMAGINET_TYPES_FLOAT32	(0x14)
+#define IMAGINET_TYPES_FLOAT64	(0x18)
+#define IMAGINET_TYPES_INT8	(0x21)
+#define IMAGINET_TYPES_INT16	(0x22)
+#define IMAGINET_TYPES_INT32	(0x24)
+#define IMAGINET_TYPES_INT64	(0x28)
+#define IMAGINET_TYPES_QDYN8	(0x31)
+#define IMAGINET_TYPES_QDYN16	(0x32)
+#define IMAGINET_TYPES_QDYN32	(0x34)
 
 // data_in [1] (4 bytes)
-#define IMAI_DATA_IN_RANK (1)
-#define IMAI_DATA_IN_SHAPE (((int[]){1})
 #define IMAI_DATA_IN_COUNT (1)
 #define IMAI_DATA_IN_TYPE float
 #define IMAI_DATA_IN_TYPE_ID IMAGINET_TYPES_FLOAT32
-#define IMAI_DATA_IN_SHIFT 0
-#define IMAI_DATA_IN_OFFSET 0
-#define IMAI_DATA_IN_SCALE 1
-#define IMAI_DATA_IN_SYMBOLS { }
+#define IMAI_DATA_IN_SCALE (1)
+#define IMAI_DATA_IN_OFFSET (0)
+#define IMAI_DATA_IN_IS_QUANTIZED (0)
 
-#define IMAI_KEY_MAX (28)
+// data_out [3] (12 bytes)
+#define IMAI_DATA_OUT_COUNT (3)
+#define IMAI_DATA_OUT_TYPE float
+#define IMAI_DATA_OUT_TYPE_ID IMAGINET_TYPES_FLOAT32
+#define IMAI_DATA_OUT_SCALE (1)
+#define IMAI_DATA_OUT_OFFSET (0)
+#define IMAI_DATA_OUT_IS_QUANTIZED (0)
+
+#define IMAI_KEY_MAX (43)
+
+
 
 // Return codes
 #define IMAI_RET_SUCCESS 0
 #define IMAI_RET_NODATA -1
-#define IMAI_RET_ERROR -2
-#define IMAI_RET_STREAMEND -3
-
-#define IPWIN_RET_SUCCESS 0
-#define IPWIN_RET_NODATA -1
-#define IPWIN_RET_ERROR -2
-#define IPWIN_RET_STREAMEND -3
+#define IMAI_RET_NOMEM -2
 
 // Exported methods
 int IMAI_dequeue(float *restrict data_out);
 int IMAI_enqueue(const float *restrict data_in);
-void IMAI_finalize(void);
-int IMAI_init(void);
+void IMAI_init(void);
 
-// Implement this method to perform profiling    
-void IMAI_hook_region(bool entered, int32_t region_id);
-
-// Symbol IMAI_PROFILING must be defined to enable profiling of models
-void IMAI_mtb_models_profile_log();
-#define IMAI_MAX_MTB_MODELS 4
-extern int32_t IMAI_mtb_models_count;
-extern mtb_ml_model_t* IMAI_mtb_models[IMAI_MAX_MTB_MODELS];
-
-// Profiling regions
-#ifdef IMAI_PROFILING
-    #define IMAI_REGIONS_COUNT 2
-    #define IMAI_REGIONS_NAMES {\
-        "PREPROCESSOR",\
-        "NETWORK",\
-    }
-    typedef enum {
-        IMAI_PREPROCESSOR = 0,
-        IMAI_NETWORK = 1,
-    } IMAI_Region_t;
-#else
-    #define IMAI_REGIONS_COUNT 0
-    #define IMAI_REGIONS_NAMES {}
-    typedef enum {IMAI_REGIONS_EMPTY} IMAI_Region_t;
-#endif
-
-#ifdef IMAI_REFLECTION
-
-typedef enum {
-    IMAI_PARAM_UNDEFINED = 0,
-    IMAI_PARAM_INPUT = 1,
-    IMAI_PARAM_OUTPUT = 2,
-    IMAI_PARAM_REFERENCE = 3,
-    IMAI_PARAM_HANDLE = 7,
-} IMAI_param_attrib;
-
-typedef char *label_text_t;
-
-typedef struct {
-    char* name;
-    int size;
-    label_text_t *labels;
-} IMAI_shape_dim;
-
-typedef struct {
-    char* name;
-    IMAI_param_attrib attrib;
-    int32_t rank;
-    IMAI_shape_dim *shape;
-    int32_t count;
-    int32_t type_id;
-    float frequency;
-    int shift;
-    float scale;
-    long offset;
-} IMAI_param_def;
-
-typedef enum {
-    IMAI_FUNC_ATTRIB_NONE = 0,
-    IMAI_FUNC_ATTRIB_CAN_FAIL = 1,
-    IMAI_FUNC_ATTRIB_PUBLIC = 2,
-    IMAI_FUNC_ATTRIB_INIT = 4,
-    IMAI_FUNC_ATTRIB_DESTRUCTOR = 8,
-} IMAI_func_attrib;
-
-typedef struct {
-    char* name;
-    char* description;
-    void* fn_ptr;
-    IMAI_func_attrib attrib;
-    int32_t param_count;
-    IMAI_param_def *param_list;
-} IMAI_func_def;
-
-typedef struct {
-    uint32_t size;
-    uint32_t peak_usage;
-} IMAI_mem_usage;
-
-typedef enum {
-    IMAI_API_TYPE_UNDEFINED = 0,
-    IMAI_API_TYPE_FUNCTION = 1,
-    IMAI_API_TYPE_QUEUE = 2,
-    IMAI_API_TYPE_QUEUE_TIME = 3,
-    IMAI_API_TYPE_USER_DEFINED = 4,
-} IMAI_api_type;
-
-typedef struct {
-    uint32_t api_ver;
-    uint8_t id[16];
-    IMAI_api_type api_type;
-    char* prefix;
-    IMAI_mem_usage buffer_mem;
-    IMAI_mem_usage static_mem;
-    IMAI_mem_usage readonly_mem;
-    int32_t func_count;
-    IMAI_func_def *func_list;
-} IMAI_api_def;
-
-IMAI_api_def *IMAI_api(void);
-#endif /* IMAI_REFLECTION */
-
+#endif /* _IMAI_MODEL_H_ */

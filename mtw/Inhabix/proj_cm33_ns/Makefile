@@ -42,14 +42,14 @@ VERBOSE=
 #
 # float    -- floating point for the input data and weights
 # int8x8   -- 8-bit fixed-point for the input data and weights (this is supported by default)
-NN_TYPE=int8x8
+NN_TYPE=float
 
 # Choose the inference engine
 # tflm      -- TensorFlow Lite for Microcontrollers inference engine with interpreter
 #
 # Note that tflm_less is currently not supported by DEEPCRAFT Studio, but it is
 # supported through MTB ML tools (M33 + NNLite only).
-NN_INFERENCE_ENGINE=tflm
+NN_INFERENCE_ENGINE=generated_c
 
 ################################################################################
 # Advanced Configuration
@@ -123,7 +123,7 @@ endif
 #
 # NOTE: Includes and defines should use the INCLUDES and DEFINES variable
 # above.
-CFLAGS+=
+CFLAGS+=-O2
 
 # Additional / custom C++ compiler flags.
 #
