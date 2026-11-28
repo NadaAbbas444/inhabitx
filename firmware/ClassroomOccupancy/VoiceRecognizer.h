@@ -139,7 +139,7 @@ static void initVoiceRecognition() {
         {1, "Hey Infineon"},
         {2, "I am in the room"},
         {3, "I am leaving the room"},
-        {2, "room occupied"},
+        {2, "room busy"},
         {3, "room empty"}
     };
     const esp_err_t status = voice_engine_start(fillVoiceAudio, nullptr, SR_CHANNELS_MONO,

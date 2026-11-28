@@ -105,7 +105,7 @@
     "decoder_timeout_ms": 10000,
     "application_window_ms": 8000,
     "additional_aliases": [
-      "room occupied",
+      "room busy",
       "room empty"
     ],
     "confidence_logged": true,

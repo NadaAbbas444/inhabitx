@@ -334,7 +334,7 @@ void loop() {
         }
     }
     const bool listening = voicePolicy.listening(now);
-    if (wasListening && !listening && !voicePolicy.active(now)) Serial.println("Voice: command window closed; try room occupied / room empty after next wake");
+    if (wasListening && !listening && !voicePolicy.active(now)) Serial.println("Voice: command window closed; try room busy / room empty after next wake");
     wasListening = listening;
     const bool manual = voicePolicy.active(now);
     if (wasManual && !manual) Serial.println("Voice: override expired; automatic detection resumed");

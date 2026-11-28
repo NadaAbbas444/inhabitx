@@ -11,7 +11,7 @@ The decoder cycle is 10s; the application window remains 8s. Shared timing
 constants prevent configuring a decoder cycle shorter than that window.
 
 After rebuilding/uploading, test:
-  Hey Infineon -> wait for Voice: listening -> room occupied
+  Hey Infineon -> wait for Voice: listening -> room busy
   Hey Infineon -> wait for Voice: listening -> room empty
 The original I am in the room / I am leaving the room phrases are still
 registered with the same actions. Short phrases are additional alternatives.
