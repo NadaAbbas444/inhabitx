@@ -80,7 +80,8 @@ typedef enum {
     IX_BOOK_ERR_TIME,       /* end <= start, too long, past, outside the day */
     IX_BOOK_ERR_SEATS,      /* room too small for that many people           */
     IX_BOOK_ERR_OVERLAP,    /* another booking in that room at that time     */
-    IX_BOOK_ERR_BUSY,       /* starts now but the room is occupied / offline */
+    IX_BOOK_ERR_BUSY,       /* starts now, room offline, or occupied without a
+                               booking while another room fits                */
     IX_BOOK_ERR_LIMIT,      /* this email already has 2 active bookings      */
     IX_BOOK_ERR_FULL,       /* no space left in the booking table            */
 } ix_book_err_t;
@@ -97,6 +98,8 @@ typedef struct {
 } ix_booking_t;
 
 /* Why a room can't be booked for start..end (IX_BOOK_OK if it can).
+ * A room in use without a booking counts as busy, unless no other room
+ * fits: then it can be booked anyway (the booking wins).
  * Doesn't look at name/email. If it clashes, *clash points at the booking. */
 ix_book_err_t ix_room_check(int room, time_t start, time_t end, uint8_t people,
                             time_t now, const ix_booking_t **clash);
