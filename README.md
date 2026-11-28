@@ -14,6 +14,22 @@ The main (bookings, ghost release, lost & found, answering the web page) running
 - **Keep the fake nodes running on the laptop** (`.venv/bin/python tools/fake_nodes.py --shuffle 3` on `main`). Besides the rooms, they give the board the time: it has no clock, and until the first node message with a real time arrives, bookings are refused with `time`.
 - **Wi-Fi:** the board needs a network with internet. In a live lab, ask the staff for one and whether port 8883 is open.
 
+## Infineon Live Lab: one command
+
+Each slot can be a fresh lab PC, so everything is downloaded again (about 20 minutes in total). Open the lab in **one browser tab only**: a second login ends the session. In VS Code on the lab PC, Terminal:
+
+```powershell
+cd ~\Documents
+iwr https://raw.githubusercontent.com/NadaAbbas444/inhabitx/main-board-infineon/lab.ps1 -OutFile lab.ps1
+powershell -ExecutionPolicy Bypass -File lab.ps1
+```
+
+Add `-NoScreen` for the main without screen. The script reads the lab Wi-Fi (`PSOC-E84-AP`) from the lab's `wifi_connect.bat`, asks only for the broker password, then builds and programs the board. If something fails, run it again: finished steps are skipped. Serial output: Tera Term → Serial → KitProg3 USB-UART, Setup → Serial port → 115200, then RESET on the lab page.
+
+Before the slot ends: `Remove-Item ixmain\proj_cm33_ns\secrets.h, ixscreen\proj_cm33_ns\secrets.h` (see [Leaving the live lab](#leaving-the-live-lab)).
+
+The steps below are what the script does, for doing it by hand.
+
 ## no-screen
 
 1. **ModusToolbox → Project Creator:** E84 kit + Infineon's example **"Wi-Fi MQTT Client"** (`mtb-example-psoc-edge-wifi-mqtt-client`).
