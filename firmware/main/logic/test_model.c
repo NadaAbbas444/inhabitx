@@ -93,6 +93,19 @@ int main(void)
     int n = ix_find_rooms(t0, t0 + 1800, 2, t0, out, 4);
     CHECK(n == 2 && out[0] == 1 && out[1] == 0);    /* smallest first */
 
+    /* 5b. room in use without a booking: busy while another room fits,
+     *     bookable when it is the only one left */
+    setup(t0);
+    ix_node_update("Z.1.09", true, t0);
+    CHECK(ix_room_check(0, t0, t0 + 1800, 2, t0, NULL) == IX_BOOK_ERR_BUSY);   /* Z.1.10 is free */
+    n = ix_find_rooms(t0, t0 + 1800, 2, t0, out, 4);
+    CHECK(n == 1 && out[0] == 1);
+    ix_book(1, t0, t0 + 1800, 1, "D", "d@aau.at", t0);                          /* Z.1.10 taken */
+    CHECK(ix_room_check(0, t0, t0 + 1800, 2, t0, NULL) == IX_BOOK_OK);
+    n = ix_find_rooms(t0, t0 + 1800, 2, t0, out, 4);
+    CHECK(n == 1 && out[0] == 0);
+    CHECK(ix_book(0, t0, t0 + 1800, 2, "E", "e@aau.at", t0) == IX_BOOK_OK);
+
     /* 6. offline after 10 s of silence */
     setup(t0);
     ix_room_status(0, t0 + IX_OFFLINE_AFTER_S + 1, &st);

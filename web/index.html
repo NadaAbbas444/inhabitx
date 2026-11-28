@@ -595,7 +595,7 @@ function clampTimes() {
   bk.to = Math.min(bk.from + Math.max(SLOT, dur), bk.from + MAXLEN, CLOSE);
 }
 /* same rules as ix_room_check() on the main; the main has the final word */
-function check(r) {
+function checkStrict(r) {
   const i = info(r);
   if (i.seats < bk.people) return ['Only ' + i.seats + ' seats', false];
   for (const [a, b] of r.slots || []) if (toMin(a) < bk.to && bk.from < toMin(b)) return [`Booked ${a} – ${b}`, false];
@@ -604,6 +604,13 @@ function check(r) {
     if (r.state !== 'free') return ['In use right now', false];
   }
   return ['Available', true];
+}
+/* a room in use without a booking can still be booked when no other room fits */
+function check(r) {
+  const c = checkStrict(r);
+  if (c[1] || c[0] !== 'In use right now') return c;
+  const other = (building?.rooms || []).some(o => o.id !== r.id && checkStrict(o)[1]);
+  return other ? c : ['In use, not booked', true];
 }
 function renderBook() {
   $('book-pick').hidden = bk.step !== 'pick';
