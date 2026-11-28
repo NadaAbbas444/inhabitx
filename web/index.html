@@ -505,7 +505,13 @@ function renderOverview() {
 
   renderPlan(rooms);
 }
-document.querySelectorAll('[data-people]').forEach(b => b.onclick = () => { people = Math.min(60, Math.max(1, people + +b.dataset.people)); renderAll(); });
+/* group size after a +/- tap: steps of 1 up to 20, then 5; at most the biggest room */
+function stepPeople(p, dir) {
+  const max = Math.max(1, ...(building?.rooms || []).map(r => info(r).seats), ...Object.values(ROOM_INFO).map(r => r.seats));
+  p = dir > 0 ? p + (p < 20 ? 1 : 5) : p - (p <= 20 ? 1 : (p % 5 || 5));
+  return Math.min(max, Math.max(1, p));
+}
+document.querySelectorAll('[data-people]').forEach(b => b.onclick = () => { people = stepPeople(people, +b.dataset.people); renderAll(); });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-bookroom],[data-bookroom-plan]');
   if (!b) return;
@@ -650,7 +656,7 @@ function renderBook() {
 document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { bk.mode = b.dataset.mode; renderBook(); });
 document.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
   const d = +b.dataset.d;
-  if (b.dataset.b === 'people') bk.people = Math.min(60, Math.max(1, bk.people + d));
+  if (b.dataset.b === 'people') bk.people = stepPeople(bk.people, d);
   if (b.dataset.b === 'from') { const dur = bk.to - bk.from; bk.from += d * SLOT; bk.to = bk.from + dur; }
   if (b.dataset.b === 'to') { const t = bk.to + d * SLOT; if (t >= bk.from + SLOT && t <= bk.from + MAXLEN && t <= CLOSE) bk.to = t; }
   renderBook();
