@@ -1,64 +1,31 @@
-# InhabitX node on the board (room Z.1.09)
+# InhabitX ESP32-S3 occupancy node
 
-The board reads its sensor and sends *someone there or not* to the cloud every 2 s. The sending is done; **you only add your sensor code in `board/node_sensor.c`.**
+Arduino firmware for the **Waveshare ESP32-S3-AUDIO-Board**: onboard ES7210 microphone capture, DEEPCRAFT inference, occupancy filtering, and InhabitX MQTT reporting.
 
-This branch only holds the node. The whole project (main, web page, message contract) is on [`main`](https://github.com/NadaAbbas444/inhabitx/tree/main).
+The branch is named `feat-run-node-on-XIAO`, but this firmware currently targets the Waveshare audio board. A Seeed XIAO board needs its own microphone driver and pin configuration.
 
-```bash
-git clone -b feat-run-node-on-board https://github.com/NadaAbbas444/inhabitx.git inhabitx-node
-```
+## Setup
 
-## Before you start: Wi-Fi
+1. Open [ClassroomOccupancy.ino](firmware/ClassroomOccupancy/ClassroomOccupancy.ino) in Arduino IDE.
+2. Install **esp32 by Espressif Systems 3.3.12**. Select **ESP32S3 Dev Module**, 16 MB flash, OPI PSRAM, USB CDC enabled, and a partition with at least 3 MB for the application.
+3. Copy [secrets.h.example](firmware/ClassroomOccupancy/secrets.h.example) to `secrets.h` beside the sketch. Fill in your 2.4 GHz Wi-Fi credentials and HiveMQ `devices` password locally.
+4. Set the room in [InhabitXConfig.h](firmware/ClassroomOccupancy/InhabitXConfig.h); default: **Z.1.09**. Stop any other node publishing for that room.
+5. Verify and upload. Keep the main application running for the [room dashboard](https://nadaabbas444.github.io/inhabitx/) to update.
 
-The board reaches the cloud over Wi-Fi, so it needs a network it can join on its own. Campus Wi-Fi (eduroam) won't work, because it needs a university login.
+All required MQTT/model/codec sources are included. See [full setup and hardware notes](firmware/ClassroomOccupancy/README.txt).
 
-- **Board next to you:** use your phone's hotspot. The hotspot name is the network name shown in the Wi-Fi list, and the password is the one you set on the phone.
-  - iPhone: Settings → Personal Hotspot, turn on **Maximize Compatibility**.
-  - Android: Mobile hotspot, security **WPA2** (not WPA3-only), band **2.4 GHz** if offered.
-- **Remote board in a live lab:** a phone hotspot can't reach it. Ask the lab staff for a Wi-Fi network the board can use (name + password) and whether it allows outgoing connections on port **8883**.
+## Reporting
 
-## How to use
+- Publishes `{"room":"Z.1.09","occupied":true,"ts":0}` every 2 seconds to `inhabitx/Z/1/Z.1.09/state` over verified TLS; QoS 0, not retained.
+- Unknown, stale, or invalidated predictions pause reporting; the main marks the room offline after 10 seconds without messages.
+- Audio and inference scores stay on the device. Wi-Fi/TLS/MQTT run separately from capture and inference.
+- Serial shows state changes and one short status line every 10 seconds. Detailed diagnostics can be enabled in [SerialConfig.h](firmware/ClassroomOccupancy/SerialConfig.h).
+- Time sync starts after Wi-Fi connects and retries every 60 seconds. If sync fails, check internet access and outbound NTP (UDP 123), or configure a reachable local time server.
 
-1. **ModusToolbox → Project Creator:** your PSOC™ Edge E84 kit + Infineon's example **"Wi-Fi MQTT Client"** (`mtb-example-psoc-edge-wifi-mqtt-client`).
-2. **Copy** everything from [`board/`](board/) into the project's `proj_cm33_ns/` folder. It replaces Infineon's `publisher_task.c`, `mqtt_client_config.h` and `wifi_config.h`; rename those three to `.orig` first if you want to be able to go back.
-3. **Passwords:** copy `secrets.h.example` to `secrets.h` (same folder) and fill in:
-   - `SECRET_WIFI_SSID` / `SECRET_WIFI_PASSWORD`: the Wi-Fi from above
-   - `SECRET_MQTT_PASSWORD`: the broker password, Nada sends it to you directly
+The existing occupancy filter confirms activity across 3 predictions and holds occupancy for at least 60 seconds after the last confident activity. This is an estimate from audible human activity; quiet people may be missed.
 
-   `secrets.h` is never committed. Don't share the built `.hex`/`.elf` either: it contains the passwords.
-4. **Your code** in `node_sensor.c`:
-   - `node_sensor_init()`: set up the sensor, called once
-   - `node_is_occupied()`: your readout + logic, `return true` if someone is there, called every 2 s
+## Validation
 
-   `node_is_occupied()` must return within a few milliseconds. If reading the sensor takes longer, read it in your own task and let this function return the latest result.
-5. **Build + program.** The serial terminal shows every 2 s:
-   `node: inhabitx/Z/1/Z.1.09/state -> {"room":"Z.1.09","occupied":true,"ts":0}`
-6. **Check** https://nadaabbas444.github.io/inhabitx/: Z.1.09 follows your sensor within 2 s (Nada's laptop must be running). Board off → *Offline* after 10 s.
+Host tests cover JSON encoding and stale/invalid snapshot handling; see [test source](firmware/tests/inhabitx_contract_test.cpp). Generated model hashes remain unchanged. The local ESP32 target build was blocked before compiler launch by Windows' Illegal System DLL Relocation error. User serial output showed inference running and waiting for NTP; the latest time-sync changes and live MQTT delivery remain unverified on hardware.
 
-Logic to aim for: `true` after ~3 s of presence, `false` after ~20 s without. Only true/false leaves the board, never raw data or audio. If your sensor code runs on the CM55 core, tell Nada.
-
-## Leaving the live lab
-
-The lab's PC and board are used by the next person after you. The code is public anyway; the **passwords** are what matter (`secrets.h`, and the built `.hex`/`.elf` contain them too).
-
-1. Copy your `node_sensor.c` (and anything else you changed) to your laptop first.
-2. Delete the whole project folder on the lab PC (including `secrets.h` and `build/`), and empty the trash.
-3. Program the board with an unchanged Infineon example, so your firmware (with the passwords) isn't left on it.
-4. Don't sign in to anything on the lab PC; if you did, sign out.
-5. If in doubt, tell Nada so she can change the broker password.
-
-## If it doesn't work
-
-| Problem | Check |
-|---|---|
-| no Wi-Fi | `SECRET_WIFI_SSID` / `SECRET_WIFI_PASSWORD`; hotspot set to WPA2 / Maximize Compatibility |
-| TLS / handshake error | our `mqtt_client_config.h` really replaced Infineon's |
-| connection refused | `SECRET_MQTT_PASSWORD` |
-| messages print, page doesn't change | Nada's laptop isn't running the main |
-| Z.1.09 flips every 2 s | something else also sends for Z.1.09: only this board should. Tell Nada |
-
-To watch the messages: https://www.hivemq.com/demos/websocket-client/, host `inhabitx-46341c9d.a03.euc1.aws.hivemq.cloud`, port `8884`, SSL on, user `devices`, subscribe to `inhabitx/Z/#`.
-
-## Sensor choice (N1)
-
-_To be filled in: which sensor, why, and where it's mounted._
+The original Infineon PSOC Edge integration remains in [board/](board/) for reference; its sensor function is a placeholder. The ESP32 firmware is in `firmware/ClassroomOccupancy/`.

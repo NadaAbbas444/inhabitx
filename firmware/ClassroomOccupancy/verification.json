@@ -1,0 +1,27 @@
+{
+  "generated_model_files_unchanged": true,
+  "sha256": {
+    "model.c": "9373272c47f3da920ecb846b78fced4715326038582330c26ce2286d7a2f0d1f",
+    "model.h": "a72f0b1bec76eb04e246494b913156dd83de335bf710450d4068032e32ab3324"
+  },
+  "target_compile_passed": false,
+  "target_compile_blocker": "Windows Illegal System DLL Relocation when launching installed compiler",
+  "hardware_tested": false,
+  "inhabitx_integration": {
+    "branch": "feat-run-node-on-board",
+    "reviewed_commit": "86c5d450ebd3da5d2ee5f3c520ce49fe2a947287",
+    "room": "Z.1.09",
+    "mqtt_library": "PubSubClient 2.8 (vendored, MIT)",
+    "tls_verification_enabled": true,
+    "publish_interval_ms": 2000,
+    "unknown_stale_or_invalid_epoch_policy": "suppress publish; main marks offline after 10 seconds",
+    "existing_occupancy_filter_unchanged": true,
+    "host_contract_tests_passed": true,
+    "host_test_cases": ["occupied JSON", "unoccupied JSON", "unknown suppression", "truncation", "freshness boundary", "epoch mismatch", "millis rollover"],
+    "target_compile_attempted": true,
+    "target_compile_passed": false,
+    "target_compile_blocker": "Windows Illegal System DLL Relocation before compiler launch",
+    "live_broker_tested": false,
+    "hardware_tested": false
+  }
+}

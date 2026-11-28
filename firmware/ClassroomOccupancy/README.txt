@@ -1,0 +1,195 @@
+ClassroomOccupancy - Waveshare ESP32-S3-AUDIO-Board
+================================================
+
+Open ClassroomOccupancy.ino in Arduino IDE. Keep all headers and the src
+directory beside it. The exact supplied model.c/model.h are bundled unchanged.
+The ES7210 C driver is bundled too; no additional Arduino libraries required.
+
+INHABITX SETUP
+1. Copy secrets.h.example to secrets.h beside the sketch. Fill in the Wi-Fi
+   SSID/password and the HiveMQ devices password supplied by Nada.
+   Without credentials the firmware runs local sensing and logs an offline notice.
+2. Use a 2.4 GHz WPA2 hotspot with outbound MQTT/TLS port 8883 and NTP available.
+3. In InhabitXConfig.h set NODE_BUILDING, NODE_FLOOR and NODE_ROOM for this board.
+   Default is Z / 1 / Z.1.09. Do not run another node for that same room;
+   the PSOC node must be stopped when this ESP32 replaces it.
+4. Verify/upload with the settings below. On Serial Monitor expect:
+   MQTT: connected | room Z.1.09
+   Room: OCCUPIED | activity 95% | mic -30 dBFS
+5. Keep the main application running on Nada's laptop. Check room Z.1.09 at
+   https://nadaabbas444.github.io/inhabitx/ . Removing power should show Offline
+   after about 10 seconds. Test hotspot loss/restoration and broker reconnection.
+
+NetworkClientSecure and WiFi are supplied by Arduino-ESP32. PubSubClient 2.8
+is bundled under src/mqtt with its MIT license, so no Library Manager install
+is required. BrokerCertificate.h contains the project's ISRG Root X1 CA.
+TLS verifies the broker hostname and certificate. NTP sets the system clock
+before connecting; if NTP is blocked, publishing waits and logs a notice.
+Time sync starts after Wi-Fi obtains an IP and restarts on reconnect, with
+60s retries across three public NTP servers. A no-reply warning prints once.
+If it persists, try another internet-connected hotspot or allow UDP port 123;
+NTP_SERVER_1/2/3 in InhabitXConfig.h can point to a reachable local time server.
+No certificate verification bypass is used. Passwords are never printed.
+secrets.h and built binaries contain credentials; keep them out of shared files.
+
+INHABITX MESSAGE AND HEALTH POLICY
+MQTT 3.1.1 over TLS, host inhabitx-46341c9d.a03.euc1.aws.hivemq.cloud:8883.
+Username devices; client id inhabitx-node-Z.1.09 (derived from NODE_ROOM).
+Topic inhabitx/<building>/<floor>/<room>/state; QoS 0; retain=false; every 2s.
+Payload is only {"room":"Z.1.09","occupied":true/false,"ts":0}.
+ts=0 is allowed: the main uses its own receipt clock. No audio, model scores
+or diagnostic levels are published. No subscriptions or last will are needed.
+
+OCCUPIED maps to true; UNOCCUPIED_INFERRED maps to false. UNKNOWN, a prediction
+older than 2s, or an invalidated capture epoch suppresses publishing. The
+main then shows Offline after its 10s timeout rather than a false empty claim.
+A one-item mailbox keeps only the newest decision. No offline message backlog
+is sent on reconnection. Wi-Fi and broker retries run in a lower priority task
+on core 0; both broker-only and Wi-Fi disconnects are retried automatically.
+The model and its existing filter are unchanged: 3 activity predictions to
+confirm occupancy, 60s hold after last activity, background timing as below.
+These differ from InhabitX's suggested ~3s confirmation / 2min hold; tune
+OccupancyFilter.h after validation if those exact application timings are needed.
+Network scheduling and added TLS RAM still require hardware validation; monitor
+dropped blocks, overflows and queue depth with Wi-Fi active.
+
+ARDUINO SETTINGS
+Boards Manager: esp32 by Espressif Systems, version 3.3.12 (installed locally).
+Board: ESP32S3 Dev Module
+CPU Frequency: 240 MHz
+Flash Size: 16MB
+PSRAM: OPI PSRAM
+USB Mode: Hardware CDC and JTAG
+USB CDC On Boot: Enabled
+Partition Scheme: a 16MB scheme with at least a 3MB application partition.
+Use normal USB upload, then Serial Monitor at 115200 baud.
+Do not select the Arduino Nano ESP32 board or an ESP32-C3 board.
+No ESP-SR model partition is needed: this uses the supplied DEEPCRAFT model.
+build_opt.h supplies -O3 for the generated inference code.
+
+HARDWARE
+No external microphone wiring is needed. Capture uses the onboard analog
+microphone through ES7210, not analogRead and not a direct PDM microphone.
+ESP32 is the clock master; the ADC is a slave.
+I2C SDA GPIO11; I2C SCL GPIO10; ADC seven-bit address 0x40.
+I2S MCLK GPIO12; BCLK GPIO13; WS/LRCK GPIO14; ADC data -> ESP GPIO15.
+GPIO16 is speaker data and is not configured by this sketch.
+Sample rate 16000 Hz; 16-bit signed PCM; four-slot Philips TDM.
+MCLK = 256 * Fs = 4.096 MHz; BCLK = 4 * 16 * Fs = 1.024 MHz.
+The sketch selects the first slot (MIC1) as mono input. It prints all four
+slot RMS levels to help verify the microphone path. Do not average the four
+slots: they can include an echo-reference channel or an unused input.
+ES7210 microphone bias 2.87V; initial analog gain 24dB; digital gain 0dB.
+Tune MIC_GAIN after observing audio levels; reduce gain if clipping occurs.
+The speaker/DAC, display, camera, SD and GPIO expander are not initialized.
+Only connect the board via USB for the first test. Battery operation follows
+the board's normal wiring and battery switch; USB CDC will then be absent.
+
+MODEL CONTRACT
+Exact supplied model ID: e48a1b9d-548a-41c8-860a-86ac08e95c34
+Input: one float sample at a time, normalized signed PCM (pcm16 / 32768.0f).
+All feature extraction is already included. Do not add another FFT/Mel stage.
+The export actually contains Hamming smoothing; preserve it even though an
+earlier manual discussion mentioned Hann. Training/export define the pipeline.
+Context: 1 second, 32 features at 50 Hz; predictions nominally every 0.5 sec.
+Outputs: [0] unlabeled, [1] background, [2] human_activity.
+Generated memory report: 76,800 bytes buffers + 9,992 bytes state;
+34,308 bytes readonly, plus driver, queues, stacks and Arduino runtime memory.
+No TensorFlow Lite Micro library or retraining required for this ANSI C export.
+ModelBridge.h handles C linkage and the C99 restrict keyword in the header.
+
+BEHAVIOR
+UNKNOWN while warming up or when input is invalid/stale.
+OCCUPIED after 3 consecutive activity predictions at or above 0.80.
+UNOCCUPIED_INFERRED after 20 sec continuous confident background at startup.
+After occupancy: at least 60 sec since the most recent confident activity,
+plus at least 10 sec continuous confident background, before inferring empty.
+Thresholds and times are in OccupancyFilter.h, not trained model parameters.
+Ambiguous/unlabeled predictions do not establish that a room is empty.
+Invalid/clipped/constant input, dropped blocks, or ADC failures must not be
+interpreted as evidence of an empty room. Overflow resets inference context.
+
+SERIAL OUTPUT
+Default: a short Room status line on each state change and every 10 seconds.
+It shows OCCUPIED / EMPTY (inferred) / UNKNOWN, activity score and mic level.
+Connection notices and errors remain visible. Audio warning totals appear
+only when counters change. Successful MQTT publishes are quiet; sending is still 2s.
+SerialConfig.h controls SERIAL_STATUS_EVERY_MS and SERIAL_VERBOSE (default false).
+Set SERIAL_VERBOSE=true to restore prediction JSON and MQTT payload logging.
+Verbose JSON includes state, human_activity/background/unlabeled scores, selected mic
+RMS in dBFS, all four slot RMS levels, clipping fraction, worst processing
+block time, queue depth, dropped blocks, DMA overflows and read errors.
+The processing time includes generated neural-network inference during that block.
+Capture runs separately on core 0; the single stateful model runs on core 1.
+Buffer is about 0.5 sec; increasing it cannot fix sustained slow inference.
+
+FIRST TEST
+1. Open the sketch with the settings above, Verify, then upload.
+2. Initialization must find ES7210 at 0x40. If not, confirm board identity,
+   pins and power. A failure prints FATAL and keeps occupancy UNKNOWN.
+3. Speak near MIC1. slot_rms[0] and mic_rms_dbfs should respond, not remain
+   zero or constant. The selected slot should not show sustained clipping.
+4. Compare silence, ordinary speech, footsteps and classroom background.
+   Inspect scores before changing thresholds. Do not expect every clap to
+   pass the three-prediction confirmation rule.
+5. Confirm dropped, dma_overflows and read_errors remain zero. Startup
+   overflow counters can increase during initial codec configuration; ongoing
+   growth is a fault. Watch queued_blocks for a sustained rising backlog.
+6. Validate score parity with known training-format WAV audio before field
+   evaluation. Gain and feature amplitude must match deployment conditions.
+
+LIMITATION
+This estimates occupancy from audible human activity. Silent occupants can
+be missed and speech played by a phone or from outside can trigger it.
+UNOCCUPIED_INFERRED means a timeout with confident background, not verified
+absence of people. Field-test and retrain on real recordings from this board.
+Audio remains local; the sketch does not save or transmit microphone audio.
+
+VERIFICATION STATUS
+Source/header/API review completed against the installed Arduino-ESP32
+3.3.12 headers and supplied generated model. Both generated model files
+must remain byte-identical to the originals.
+A target build was attempted but Windows prevented the installed compiler
+from launching: Illegal System DLL Relocation. No compiler result or board
+execution has been obtained in this session. Use Arduino IDE Verify first.
+No device was flashed or serial port opened by the assistant.
+InhabitX integration: target compile was attempted again and hit the same
+Windows compiler-launch error before a compile result could be obtained.
+Host-side contract tests cover JSON boolean encoding, UNKNOWN suppression,
+truncation, stale results, stream reset invalidation and millis rollover.
+See verification.json for the recorded result. No live broker or board test
+was performed; credentials have not been supplied.
+
+INTEGRATION PROVENANCE
+InhabitX branch feat-run-node-on-board, commit 86c5d450ebd3da5d2ee5f3c520ce49fe2a947287:
+https://github.com/NadaAbbas444/inhabitx/tree/86c5d450ebd3da5d2ee5f3c520ce49fe2a947287
+Broker CA/message contract from main, commit 2f8881bcaa92f51d4098d813f7405b8b8b1b4b24.
+MQTT implementation (vendored, unmodified):
+https://github.com/knolleary/pubsubclient/tree/v2.8
+The Infineon hardware/RTOS source was not copied: this is an ESP32 port of
+the MQTT contract, retaining the existing Waveshare microphone and model.
+
+REFERENCES AND PROVENANCE
+Waveshare board pin table (explicit SDA11/SCL10, MCLK12/BCLK13/WS14/DIN15):
+https://www.waveshare.com/wiki/ESP32-S3-AUDIO-Board
+Waveshare schematic v1.1 (U8 ES7210, MIC1/MIC2, shared audio clocks, 0x40):
+https://files.waveshare.com/wiki/ESP32-S3-AUDIO-Board/ESP32-S3-AUDIO-Board_1.1.pdf
+Waveshare Arduino example documentation (lists es7210 driver dependency):
+https://docs.waveshare.com/ESP32-S3-AUDIO-Board/Arduino
+Waveshare ESP-IDF example documentation (audio peripheral initialization):
+https://docs.waveshare.com/ESP32-S3-AUDIO-Board/ESP-IDF
+Official demo archive (could not be transferred in this session):
+https://files.waveshare.com/wiki/ESP32-S3-AUDIO-Board/ESP32-S3-AUDIO-Board-Demo.zip
+Espressif ES7210 upstream driver API/source:
+https://github.com/espressif/esp-bsp/tree/master/components/es7210
+ESP-IDF I2S documentation:
+https://docs.espressif.com/projects/esp-idf/en/v5.5.1/esp32s3/api-reference/peripherals/i2s.html
+
+Driver files copied from the user's existing Documents/Arduino/libraries/es7210
+installation. They retain Espressif SPDX Apache-2.0 notices. Their reset,
+clock coefficient, mic bias and TDM setup were inspected. This project uses
+the TDM mode supported by that driver rather than copying the complete
+Waveshare factory speech recognition/display application. The full factory
+demo source was not retrieved or built, so example documentation checks
+should not be mistaken for a source-level audit of that entire archive.
+Generated model files retain their original DEEPCRAFT notices and terms.
