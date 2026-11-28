@@ -7,6 +7,7 @@
 #include "driver/i2c.h"
 #include "driver/i2s_tdm.h"
 #include "esp_timer.h"
+#include "esp_system.h"
 #include "esp_heap_caps.h"
 #include "freertos/idf_additions.h"
 #include "src/es7210/es7210.h"
@@ -17,7 +18,7 @@
 constexpr int PIN_SDA = 11, PIN_SCL = 10;
 constexpr int PIN_MCLK = 12, PIN_BCLK = 13, PIN_WS = 14, PIN_MIC_DATA = 15;
 constexpr uint32_t SAMPLE_RATE = 16000;
-constexpr size_t BLOCK_FRAMES = 256, TDM_SLOTS = 4, QUEUE_BLOCKS = 32;
+constexpr size_t BLOCK_FRAMES = 256, TDM_SLOTS = 4, QUEUE_BLOCKS = 96;
 // MIC1 is the first TDM slot. Other slots include a speaker reference; do not average all four.
 constexpr size_t MIC_SLOT = 0;
 constexpr es7210_mic_gain_t MIC_GAIN = ES7210_MIC_GAIN_24DB;
@@ -26,6 +27,7 @@ constexpr float INPUT_GAIN = 1.0f; // Keep fixed; calibrate against training rec
 struct AudioBlock {
     uint32_t sequence;
     uint32_t epoch;
+    uint32_t captureEpoch;
     uint32_t capturedMs;
     uint16_t frames;
     float rms[TDM_SLOTS];
@@ -44,6 +46,7 @@ static TaskHandle_t captureHandle, modelHandle, networkHandle;
 static i2s_chan_handle_t rxChannel;
 static es7210_dev_handle_t adc;
 static volatile uint32_t streamEpoch = 0, droppedBlocks = 0, dmaOverflows = 0, readErrors = 0;
+static volatile uint32_t captureEpoch = 0;
 #include "VoiceRecognizer.h"
 #include "InhabitXNetwork.h"
 
@@ -56,6 +59,7 @@ static void must(esp_err_t error, const char* operation) {
 static bool IRAM_ATTR onOverflow(i2s_chan_handle_t, i2s_event_data_t*, void*) {
     __atomic_add_fetch(&dmaOverflows, 1, __ATOMIC_RELAXED);
     __atomic_add_fetch(&streamEpoch, 1, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&captureEpoch, 1, __ATOMIC_RELAXED);
     return false;
 }
 
@@ -123,16 +127,18 @@ static void captureTask(void*) {
     uint32_t sequence = 0;
     for (;;) {
         size_t bytes = 0;
-        uint32_t before = __atomic_load_n(&streamEpoch, __ATOMIC_RELAXED);
+        uint32_t before = __atomic_load_n(&captureEpoch, __ATOMIC_RELAXED);
         const esp_err_t error = i2s_channel_read(rxChannel, raw, sizeof(raw), &bytes, 1000);
         if (error != ESP_OK || bytes == 0 || bytes % (TDM_SLOTS * sizeof(int16_t))) {
             __atomic_add_fetch(&readErrors, 1, __ATOMIC_RELAXED);
             __atomic_add_fetch(&streamEpoch, 1, __ATOMIC_RELAXED);
+            __atomic_add_fetch(&captureEpoch, 1, __ATOMIC_RELAXED);
             vTaskDelay(1); continue;
         }
-        if (before != __atomic_load_n(&streamEpoch, __ATOMIC_RELAXED)) continue;
+        if (before != __atomic_load_n(&captureEpoch, __ATOMIC_RELAXED)) continue;
         block.sequence = sequence++;
-        block.epoch = before;
+        block.epoch = __atomic_load_n(&streamEpoch, __ATOMIC_RELAXED);
+        block.captureEpoch = before;
         block.capturedMs = millis();
         block.frames = bytes / (TDM_SLOTS * sizeof(int16_t));
         double energy[TDM_SLOTS] = {};
@@ -147,9 +153,10 @@ static void captureTask(void*) {
         }
         for (unsigned ch = 0; ch < TDM_SLOTS; ++ch) block.rms[ch] = sqrt(energy[ch] / block.frames);
         block.clipFraction = (float)clipped / block.frames;
-        if (voiceRunning && !__atomic_load_n(&voiceFault, __ATOMIC_RELAXED) &&
-            xQueueSend(voiceAudioQueue, &block, 0) != pdTRUE) {
-            __atomic_store_n(&voiceFault, 1, __ATOMIC_RELAXED);
+        if (voiceRunning && xQueueSend(voiceAudioQueue, &block, 0) != pdTRUE) {
+            requestVoiceRecovery();
+            xQueueReset(voiceAudioQueue);
+            xQueueSend(voiceAudioQueue, &block, 0);
         }
         if (xQueueSend(audioQueue, &block, 0) != pdTRUE) {
             __atomic_add_fetch(&droppedBlocks, 1, __ATOMIC_RELAXED);
@@ -210,11 +217,26 @@ static void inferenceTask(void*) {
     }
 }
 
+static const char* resetName(esp_reset_reason_t reason) {
+    switch (reason) {
+        case ESP_RST_POWERON: return "power on";
+        case ESP_RST_EXT: return "external reset";
+        case ESP_RST_SW: return "software reset";
+        case ESP_RST_PANIC: return "panic";
+        case ESP_RST_INT_WDT: return "interrupt watchdog";
+        case ESP_RST_TASK_WDT: return "task watchdog";
+        case ESP_RST_WDT: return "watchdog";
+        case ESP_RST_BROWNOUT: return "brownout";
+        default: return "other";
+    }
+}
+
 void setup() {
     Serial.begin(115200);
     const uint32_t started = millis();
     while (!Serial && millis() - started < 2000) delay(10);
     Serial.println("ClassroomOccupancy | starting microphone and model...");
+    Serial.printf("Reset: %s (%d)\n", resetName(esp_reset_reason()), (int)esp_reset_reason());
     if (SERIAL_VERBOSE)
         Serial.println("Model: 16kHz mono, 1s context; 0=unlabeled 1=background 2=human_activity");
     if (!psramFound()) must(ESP_ERR_NO_MEM, "OPI PSRAM required for occupancy plus voice");
@@ -245,6 +267,9 @@ void setup() {
     // while capture is still parked, then release all application tasks.
     must(i2s_channel_disable(rxChannel), "I2S stop after voice init");
     __atomic_add_fetch(&streamEpoch, 1, __ATOMIC_RELAXED);
+    __atomic_add_fetch(&captureEpoch, 1, __ATOMIC_RELAXED);
+    // Overflow before capture is released is startup settling, not runtime loss.
+    __atomic_store_n(&dmaOverflows, 0, __ATOMIC_RELAXED);
     must(i2s_channel_enable(rxChannel), "I2S restart after voice init");
     xTaskNotifyGive(modelHandle);
     xTaskNotifyGive(captureHandle);
@@ -257,8 +282,8 @@ void loop() {
     static bool haveResult = false, havePrinted = false;
     static RoomState printedState = RoomState::Unknown;
     static VoicePolicy voicePolicy;
-    static bool wasListening = false, wasManual = false, voiceFaultPrinted = false;
-    static uint32_t policyEpoch = 0;
+    static bool wasListening = false, wasManual = false, wasRecovering = false;
+    static uint32_t policyEpoch = 0, policyGeneration = 0;
     static uint32_t printedDrops = 0, printedOverflows = 0, printedErrors = 0;
     Result result;
     if (xQueueReceive(resultQueue, &result, pdMS_TO_TICKS(100)) == pdTRUE) {
@@ -278,17 +303,21 @@ void loop() {
     }
     const uint32_t now = millis();
     const uint32_t currentEpoch = __atomic_load_n(&streamEpoch, __ATOMIC_RELAXED);
-    if (policyEpoch != currentEpoch || __atomic_load_n(&voiceFault, __ATOMIC_RELAXED)) {
+    const uint32_t currentCaptureEpoch = __atomic_load_n(&captureEpoch, __ATOMIC_RELAXED);
+    const uint32_t generation = __atomic_load_n(&voiceGeneration, __ATOMIC_SEQ_CST);
+    const bool recovering = __atomic_load_n(&voiceRecovering, __ATOMIC_SEQ_CST) != 0;
+    if (policyEpoch != currentCaptureEpoch || policyGeneration != generation || recovering) {
         voicePolicy.cancelListening();
-        policyEpoch = currentEpoch;
+        policyEpoch = currentCaptureEpoch;
+        policyGeneration = generation;
     }
-    if (voiceRunning && __atomic_load_n(&voiceFault, __ATOMIC_RELAXED) && !voiceFaultPrinted) {
-        Serial.println("Voice: audio gap detected; voice disabled until reboot. Automatic sensing continues.");
-        voiceFaultPrinted = true;
-    }
+    if (recovering && !wasRecovering) Serial.println("Voice: recovering from audio gap; current command cancelled");
+    if (!recovering && wasRecovering) Serial.println("Voice: recovered | say Hey Infineon again");
+    wasRecovering = recovering;
     VoiceEvent event;
     while (voiceEventQueue && xQueueReceive(voiceEventQueue, &event, 0) == pdTRUE) {
-        if (__atomic_load_n(&voiceFault, __ATOMIC_RELAXED) || event.epoch != currentEpoch ||
+        if (__atomic_load_n(&voiceRecovering, __ATOMIC_SEQ_CST) || event.epoch != currentCaptureEpoch ||
+            event.generation != __atomic_load_n(&voiceGeneration, __ATOMIC_SEQ_CST) ||
             uint32_t(now - event.capturedMs) > VOICE_AUDIO_MAX_AGE_MS) continue;
         if (voicePolicy.command(event.command, now)) {
             Serial.println(event.command == VoiceCommand::Arrive ?

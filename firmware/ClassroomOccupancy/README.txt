@@ -1,8 +1,39 @@
+VOICE STREAM RECOVERY AND RESET DIAGNOSTICS
+The occupancy model and speech recognizer now track separate continuity.
+An occupancy queue drop resets only the occupancy model. It no longer
+invalidates speech PCM that was received intact. Physical I2S/DMA/read
+faults change captureEpoch; actual speech block loss is detected by sequence.
+
+Capture queue: 96 blocks (about 1.5s). Speech queue: 32 blocks (about 0.5s).
+Both remain in PSRAM. A 100ms task scheduling delay alone no longer marks
+speech faulty: the feeder waits and checks the next block's sequence/age.
+Speech PCM older than 1s is still rejected rather than replaying old commands.
+
+A real speech discontinuity cancels the current wake/command window and
+quarantines commands. The feeder substitutes silence for at least 6s of
+samples AND 6s of elapsed time, then waits for an actual MultiNet timeout.
+Only then does recognition resume, with a brief settling interval and a
+fresh Hey Infineon required. Expect recovery to take roughly 6-12s when
+capture is flowing, depending on the decoder timeout. A stalled microphone
+cannot complete recovery and cannot produce a command. Recovery generations
+reject queued events from before the gap; existing manual occupancy TTLs
+remain as declared. No permanent reboot-only voice latch remains.
+
+Serial prints recovering/recovered once per transition. Reset: at boot
+reports the ESP32 reset reason, so repeated startup can be investigated.
+DMA overflow counters are zeroed while I2S is stopped after startup model
+initialization; counts reported afterward represent runtime overflow.
+
+Host tests cover contiguous/missing PCM, physical epoch changes, sequence
+wrap, and recovery boundaries (silence samples + elapsed time + timeout).
+Those tests pass. Recovery timing and concurrent processing still require
+board testing; do not assume the unexplained restart in the prior log is fixed.
+
 RUNTIME RAM FIX FOR INFERENCE-TASK ESP_ERR_NO_MEM
 The speech models loaded successfully, but their allocations left too little
 internal RAM to create the inference task's 16 KB stack. The firmware now:
 - Allocates the model's 76800-byte workspace and 9992-byte state in PSRAM.
-- Allocates the 32-block capture and 16-block speech audio queues in PSRAM.
+- Allocates the capture and speech audio queues in PSRAM.
 - Reserves capture, inference and MQTT task stacks in INTERNAL RAM before
   speech initialization. Tasks wait on startup notifications until ready.
 - Restarts I2S after speech initialization to discard old startup DMA audio.
@@ -187,7 +218,7 @@ RMS in dBFS, all four slot RMS levels, clipping fraction, worst processing
 block time, queue depth, dropped blocks, DMA overflows and read errors.
 The processing time includes generated neural-network inference during that block.
 Capture runs separately on core 0; the single stateful model runs on core 1.
-Buffer is about 0.5 sec; increasing it cannot fix sustained slow inference.
+The occupancy queue holds about 1.5 sec and speech about 0.5 sec. This absorbs brief bursts, not sustained slow inference.
 
 VOICE COMMANDS (EXPERIMENTAL, OFFLINE)
 Say "Hey Infineon", pause for the "Voice: listening" serial notice, then within

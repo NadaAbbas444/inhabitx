@@ -1,9 +1,24 @@
 #include "../ClassroomOccupancy/VoicePolicy.h"
 #include "../ClassroomOccupancy/NodeMessage.h"
+#include "../ClassroomOccupancy/VoiceContinuity.h"
 #include <assert.h>
 #include <string.h>
 
 int main() {
+    VoiceContinuity continuity;
+    assert(continuity.check(10, 1));
+    assert(continuity.check(11, 1)); // No PCM loss even when another consumer resets its model.
+    assert(!continuity.check(13, 1)); // Missing speech PCM block.
+    assert(continuity.check(14, 1)); // New continuous stream can recover.
+    assert(!continuity.check(15, 2)); // Actual ADC/DMA discontinuity.
+    assert(continuity.check(16, 2));
+    VoiceContinuity sequenceWrap;
+    assert(sequenceWrap.check(UINT32_MAX, 4));
+    assert(sequenceWrap.check(0, 4));
+    assert(!voiceRecoveryReady(96000, 16000, 6000, false));
+    assert(!voiceRecoveryReady(95999, 16000, 6000, true));
+    assert(!voiceRecoveryReady(96000, 16000, 5999, true));
+    assert(voiceRecoveryReady(96000, 16000, 6000, true));
     VoicePolicy policy;
     assert(!policy.command(VoiceCommand::Leave, 100)); // No wake: no effect.
     assert(!policy.active(100));

@@ -82,5 +82,19 @@
     "stacks_and_dma_in_internal_ram": true,
     "fresh_target_compile_passed": false,
     "hardware_retest_passed": false
+  },
+  "voice_stream_recovery": {
+    "occupancy_queue_blocks": 96,
+    "speech_queue_blocks": 32,
+    "physical_epoch_separate_from_model_epoch": true,
+    "permanent_disable_removed": true,
+    "recovery_min_silent_samples": 96000,
+    "recovery_min_elapsed_ms": 6000,
+    "decoder_timeout_required": true,
+    "fresh_wake_required_after_recovery": true,
+    "reset_reason_logged": true,
+    "startup_dma_overflow_baseline_cleared": true,
+    "host_continuity_and_policy_tests_passed": true,
+    "hardware_retest_passed": false
   }
 }

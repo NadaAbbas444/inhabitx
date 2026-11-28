@@ -72,7 +72,7 @@ Say the activation phrase again before each command. Arrival cancels an active l
 
 Select **InhabitX Voice 16M** and **OPI PSRAM** before uploading; the bundled Arduino-ESP32 speech models are flashed automatically. A missing model disables voice with a serial notice. `VoicePolicy.h` controls the durations.
 
-This implementation uses continuous English MultiNet command recognition to gate room commands behind the custom activation phrase. It is **not a custom-trained WakeNet model**. Recognition accuracy for “Infineon”, false triggers, and running speech alongside the occupancy model need hardware validation. A speech audio gap disables voice until reboot while automatic detection continues.
+This implementation uses continuous English MultiNet command recognition to gate room commands behind the custom activation phrase. It is **not a custom-trained WakeNet model**. Recognition accuracy for “Infineon”, false triggers, and running speech alongside the occupancy model need hardware validation. A speech audio gap cancels the command window and enters temporary decoder recovery while automatic detection continues.
 
 The main receives the normal occupancy boolean plus confirmation text; its current UI ignores the extra text fields. Host voice-policy and message tests pass. The target build remains blocked by the local Windows compiler-launch issue; voice recognition has not been tested on a board. See the [voice instructions and test checklist](firmware/ClassroomOccupancy/README.txt).
 
@@ -83,3 +83,11 @@ If startup reports `FATAL: inference task: ESP_ERR_NO_MEM` after loading the spe
 The original generated source is preserved exactly at `src/model/model.c.reference` (not compiled). The adapted `model.c` changes only workspace allocation; weights and calculations remain unchanged. A host comparison across three reset segments produced **12 bit-identical predictions** using static and heap-backed workspace. Startup now prints free internal RAM, its largest block and free PSRAM before/after speech initialization.
 
 Rebuild locally with `Build-VoiceFirmware.ps1`, wait for **Build passed**, then upload the new build using the direct-upload command or the matching IDE partition setting. A fresh target compile remains blocked in the managed runner by its Windows compiler-launch error; the allocation change still needs a board retest.
+
+## Speech gap recovery
+
+The occupancy model's backlog no longer invalidates intact speech PCM. Capture uses a separate physical epoch and speech checks its own block sequence. Queues hold about 1.5 seconds for occupancy and 0.5 seconds for speech in PSRAM; a 100 ms scheduling delay alone no longer disables recognition.
+
+A real speech gap cancels the active command window. Speech feeds silence for at least six seconds of samples and elapsed time, waits for an actual MultiNet timeout, then requires a new **Hey Infineon**. Old-generation commands are rejected. Recovery normally takes about 6–12 seconds with flowing microphone data; no reboot is required. Stale audio stays rejected. Existing user-declared occupancy overrides retain their original expiry.
+
+Startup now logs the ESP32 reset reason and establishes a fresh runtime DMA-overflow baseline after model initialization. The repeated startup in the previous board log has no confirmed cause; this adds diagnostics, not a claim that reboots are fixed. Host continuity/recovery-boundary and voice-policy tests pass; runtime still needs board validation. Target compilation was attempted but remains blocked here by the compiler-launch error.
