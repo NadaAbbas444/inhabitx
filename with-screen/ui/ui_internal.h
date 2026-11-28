@@ -68,6 +68,19 @@ void ui_campus_refresh(time_t now);
 void ui_book_create(lv_obj_t *parent);
 void ui_book_refresh(time_t now);
 void ui_book_start(int room, uint8_t people);   /* room < 0: any free room */
+
+/* Group size after a +/- tap (dir 1 or -1): steps of 1 up to 20, then 5;
+ * at most the biggest room's seats. Same rule as stepPeople() on the web page. */
+static inline uint8_t ui_people_step(int p, int dir)
+{
+    int max = 1;
+    for (int i = 0; i < ix_room_count(); i++)
+        if (ix_room(i)->seats > max) max = ix_room(i)->seats;
+    if (max > 255) max = 255;
+    if (dir > 0) p += p < 20 ? 1 : 5;
+    else p -= p <= 20 ? 1 : (p % 5 ? p % 5 : 5);
+    return (uint8_t)(p < 1 ? 1 : p > max ? max : p);
+}
 void ui_book_reset(void);
 
 void ui_lf_create(lv_obj_t *parent);

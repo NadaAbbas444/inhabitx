@@ -132,8 +132,7 @@ static void book_cb(lv_event_t *e)
 
 static void people_cb(lv_event_t *e)
 {
-    int p = s_people + (int)(intptr_t)lv_event_get_user_data(e);
-    s_people = (uint8_t)(p < 1 ? 1 : p > 60 ? 60 : p);
+    s_people = ui_people_step(s_people, (int)(intptr_t)lv_event_get_user_data(e));
     ui_mark_busy();
     ui_overview_refresh(ix_now());
 }
