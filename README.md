@@ -4,6 +4,18 @@ Arduino firmware for the **Waveshare ESP32-S3-AUDIO-Board**: onboard ES7210 micr
 
 The branch is named `feat-run-node-on-XIAO`, but this firmware currently targets the Waveshare audio board. A Seeed XIAO board needs its own microphone driver and pin configuration.
 
+## Build locally without relying on the IDE menu
+
+Installing a partition option does not change a sketch's saved selection. If the menu still selects stock **ESP SR 16M** or the error still reports **3145728 bytes**, the old 3 MB limit remains active. Either fully restart Arduino IDE and select **InhabitX Voice 16M**, or use this local build command from `firmware/ClassroomOccupancy`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-VoiceFirmware.ps1
+```
+
+The script explicitly sets **upload.maximum_size=4194304**, uses the sketch's 4 MB partition table, and preserves stock ESP-SR model-upload settings. No board installation or menu selection is required for this command. `-CheckOnly` checks the resolved configuration without compiling. It compiles only and does not flash the board. IDE uploads still require selecting **InhabitX Voice 16M**.
+
+Local verification: script syntax and `-CheckOnly` pass; the installed CLI resolves 4 MB maximum, 16 MB flash and model upload at 0xC10000. The existing 3,208,608-byte application binary fits. A fresh compile was attempted but the managed runner still cannot launch the ESP32 compiler (Illegal System DLL Relocation); no fresh-build success is claimed.
+
 ## Fixing the voice firmware size limit (Windows)
 
 The combined voice and occupancy build exceeds the stock ESP SR 16M 3 MB application limit. This sketch includes a custom `partitions.csv` with **two 4 MB app slots**, 4 MB SPIFFS, and the original speech-model partition at **0xC10000**. The IDE size limit and speech-model upload address must match the layout.

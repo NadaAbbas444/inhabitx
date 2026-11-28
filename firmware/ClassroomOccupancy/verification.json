@@ -55,5 +55,18 @@
     "partition_table_verified": true,
     "windows_installer_executed": false,
     "target_rebuild_tested": false
+  },
+  "local_build_fix": {
+    "previous_ide_partition": "esp_sr_16",
+    "previous_maximum_bytes": 3145728,
+    "explicit_build_maximum_bytes": 4194304,
+    "script_configuration_check_passed": true,
+    "model_upload_offset": "0xC10000",
+    "existing_local_binary_bytes": 3208608,
+    "existing_binary_fits": true,
+    "fresh_compile_passed": false,
+    "fresh_compile_blocker": "Windows Illegal System DLL Relocation before compiler launch",
+    "ide_selection_changed": false,
+    "script": "Build-VoiceFirmware.ps1"
   }
 }

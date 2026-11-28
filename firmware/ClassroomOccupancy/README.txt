@@ -1,3 +1,22 @@
+LOCAL BUILD COMMAND (AVOIDS A STALE ARDUINO IDE MENU SELECTION)
+Installing a partition menu option does not select it in an open IDE.
+If the error still says Maximum is 3145728 bytes, the build is still using
+stock ESP SR 16M. The last local build.options.json confirmed this mismatch.
+From this sketch folder, run:
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\Build-VoiceFirmware.ps1
+This builds with the stock ESP-SR model-upload settings plus an explicit
+upload.maximum_size=4194304 and this sketch's 4 MB partitions.csv. No board
+package edits or IDE menu selections are needed for this build command.
+Use -CheckOnly to validate resolved properties without compiling. An optional
+-ConfigFile points to an Arduino CLI config; the workspace arduino-cli.yaml
+is used automatically when present. Build output is ../build-voice-local.
+The script compiles only; it does not flash the device. For upload through
+Arduino IDE, select the installed InhabitX Voice 16M option before uploading.
+Local CheckOnly passed: 4 MB maximum, 16 MB flash, OPI PSRAM, model at 0xC10000.
+The existing application .bin is 3208608 bytes and fits the 4194304-byte slot.
+Fresh compilation under the managed runner still cannot start the compiler
+(Windows Illegal System DLL Relocation); no fresh build success is claimed.
+
 ClassroomOccupancy - Waveshare ESP32-S3-AUDIO-Board
 ================================================
 
