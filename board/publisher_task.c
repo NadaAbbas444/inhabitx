@@ -8,7 +8,8 @@
  *   - PUBLISHER_DEINIT when the connection drops: stop sending
  *   - PUBLISHER_INIT after reconnecting: send again
  * Instead of the example's button, a 2 s timeout drives the sending. What is
- * sent comes from node_is_occupied() in node_sensor.c.
+ * sent comes from node_sensor.c (the microphone, via the audio core); when
+ * it has no reliable answer, nothing is sent.
  */
 #include "cybsp.h"
 #include "FreeRTOS.h"
@@ -43,6 +44,10 @@ static cy_mqtt_publish_info_t publish_info =
 static void send_state(void)
 {
     char payload[64];
+    if (!node_sensor_ready())
+    {
+        return;                     /* no reliable answer: send nothing */
+    }
     bool occupied = node_is_occupied();
     size_t len = node_message(occupied, 0, payload, sizeof payload);
     if (len == 0)

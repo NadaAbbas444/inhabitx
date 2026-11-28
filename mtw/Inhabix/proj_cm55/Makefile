@@ -85,6 +85,8 @@ INCLUDES+=
 
 # Add additional defines to the build process (without a leading -D).
 DEFINES+=CY_RETARGET_IO_CONVERT_LF_TO_CRLF
+# InhabitX node: hand the room state to the Wi-Fi core (shared/node_link.h)
+DEFINES+=INHABITX_NODE_LINK
 
 # Add additional defines related to ARM Helium and DSP extensions
 DEFINES+=ARM_MATH_HELIUM ARM_MATH_DSP ARM_MATH_AUTOVECTORIZE

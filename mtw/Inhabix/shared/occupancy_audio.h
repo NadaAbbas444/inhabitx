@@ -11,6 +11,9 @@
 #include "occupancy_filter.h"
 #define AUDIO_MEMORY_BARRIER() __DMB()
 #include "audio_queue.h"
+#ifdef INHABITX_NODE_LINK      /* the node: the Wi-Fi core sends the result (node_link.h) */
+#include "node_link.h"
+#endif
 
 #define OCC_SAMPLE_RATE 16000u
 #define OCC_PDM_CHANNEL 3u
@@ -156,13 +159,21 @@ static void occupancy_report(void)
            occupancy_name(room_filter.state), (double)(latest_scores[2] * 100.0f),
            (double)(latest_scores[1] * 100.0f), (double)mic_dbfs,
            (unsigned long)dropped_blocks, (unsigned long)fifo_errors, health_reason);
-    if (have_scores && room_filter.state != ROOM_UNKNOWN && model_epoch == stream_epoch &&
-        (uint32_t)(now - last_capture_ms) <= 1000u) {
+    const bool valid = have_scores && room_filter.state != ROOM_UNKNOWN && model_epoch == stream_epoch &&
+        (uint32_t)(now - last_capture_ms) <= 1000u;
+    if (valid) {
         /* Existing InhabitX node contract, emitted on UART for a host/gateway.
-         * UNKNOWN is suppressed. This baseline has no Wi-Fi/MQTT stack. */
+         * UNKNOWN is suppressed. */
         printf("{\"room\":\"%s\",\"occupied\":%s,\"ts\":0}\r\n", INHABITX_ROOM,
                room_filter.state == ROOM_OCCUPIED ? "true" : "false");
     }
+#ifdef INHABITX_NODE_LINK
+    /* Same result for the Wi-Fi core, which sends it to the broker; it only
+     * sends when valid, so UNKNOWN or a gap never reaches the main as empty. */
+    node_link_write(room_filter.state == ROOM_OCCUPIED ? NODE_LINK_OCCUPIED :
+                    room_filter.state == ROOM_UNOCCUPIED ? NODE_LINK_EMPTY : NODE_LINK_UNKNOWN,
+                    valid, latest_scores[2], latest_scores[1], mic_dbfs);
+#endif
 }
 
 cy_rslt_t pdm_data_process(void)
