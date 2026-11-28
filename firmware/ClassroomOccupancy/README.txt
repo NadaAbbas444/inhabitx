@@ -1,3 +1,33 @@
+FOLLOW-UP COMMAND DECODER ADAPTER
+The installed Arduino ESP_SR adapter changes its mode flag after detection,
+but does not explicitly clean the previous MultiNet recognition state. It
+also creates a fixed 5760ms decoder cycle, shorter than the application
+8-second command window. InhabitX now uses src/voice_engine/VoiceEngine.c,
+a local adapter derived from Arduino-ESP32 3.3.12 with SPDX notices retained.
+Installed Arduino libraries are not modified. It copies recognition results
+and cleans the decoder in the detection task BEFORE notifying the application
+for every match, including Hey Infineon. Timeouts also clean decoder state.
+The decoder cycle is 10s; the application window remains 8s. Shared timing
+constants prevent configuring a decoder cycle shorter than that window.
+
+After rebuilding/uploading, test:
+  Hey Infineon -> wait for Voice: listening -> room occupied
+  Hey Infineon -> wait for Voice: listening -> room empty
+The original I am in the room / I am leaving the room phrases are still
+registered with the same actions. Short phrases are additional alternatives.
+Arrival and departure hold times remain 2 minutes / 10 minutes respectively.
+Accepted room commands print their match confidence. A recognized command
+outside the application window prints an explicit notice; lack of a match
+still closes the window with a suggestion to try the short phrases.
+The adapter validates every phrase registration and reports failures even when Core Debug Level is None. It gates startup tasks and feed-buffer allocation so a
+startup allocation failure does not run a partially created pipeline.
+
+Policy tests (including late follow-up, timeout cancellation and fresh wake)
+pass on the host. The adapter's target build was attempted but the managed
+runner still cannot launch the ESP32 compiler. Recognition accuracy and
+this decoder change require a board retest; a known root cause on the
+physical device has not been confirmed solely from the serial log.
+
 VOICE STREAM RECOVERY AND RESET DIAGNOSTICS
 The occupancy model and speech recognizer now track separate continuity.
 An occupancy queue drop resets only the occupancy model. It no longer
@@ -13,7 +43,7 @@ A real speech discontinuity cancels the current wake/command window and
 quarantines commands. The feeder substitutes silence for at least 6s of
 samples AND 6s of elapsed time, then waits for an actual MultiNet timeout.
 Only then does recognition resume, with a brief settling interval and a
-fresh Hey Infineon required. Expect recovery to take roughly 6-12s when
+fresh Hey Infineon required. Expect recovery to take roughly 6-20s when
 capture is flowing, depending on the decoder timeout. A stalled microphone
 cannot complete recovery and cannot produce a command. Recovery generations
 reject queued events from before the gap; existing manual occupancy TTLs

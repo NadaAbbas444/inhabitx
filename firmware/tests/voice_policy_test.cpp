@@ -5,6 +5,15 @@
 #include <string.h>
 
 int main() {
+    static_assert(INHABITX_DECODER_TIMEOUT_MS >= VOICE_COMMAND_WINDOW_MS, "Decoder must cover follow-up window");
+    VoicePolicy cycles;
+    cycles.command(VoiceCommand::Wake, 1000);
+    assert(cycles.command(VoiceCommand::Arrive, 8500)); // Late follow-up inside the full 8s window.
+    cycles.command(VoiceCommand::Wake, 10000);
+    assert(!cycles.command(VoiceCommand::Timeout, 11000));
+    assert(!cycles.command(VoiceCommand::Leave, 12000)); // Timeout cancels that wake.
+    cycles.command(VoiceCommand::Wake, 13000);
+    assert(cycles.command(VoiceCommand::Leave, 14000)); // A fresh cycle works.
     VoiceContinuity continuity;
     assert(continuity.check(10, 1));
     assert(continuity.check(11, 1)); // No PCM loss even when another consumer resets its model.

@@ -96,5 +96,22 @@
     "startup_dma_overflow_baseline_cleared": true,
     "host_continuity_and_policy_tests_passed": true,
     "hardware_retest_passed": false
+  },
+  "followup_decoder_adapter": {
+    "base": "Arduino-ESP32 ESP_SR 3.3.12",
+    "path": "src/voice_engine/VoiceEngine.c",
+    "cleans_decoder_before_match_delivery": true,
+    "cleans_decoder_on_timeout": true,
+    "decoder_timeout_ms": 10000,
+    "application_window_ms": 8000,
+    "additional_aliases": [
+      "room occupied",
+      "room empty"
+    ],
+    "confidence_logged": true,
+    "host_voice_policy_tests_passed": true,
+    "fresh_target_compile_passed": false,
+    "hardware_retest_passed": false,
+    "registration_validated": true
   }
 }

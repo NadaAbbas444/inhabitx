@@ -1,9 +1,10 @@
 #pragma once
 #include <stdint.h>
 #include "OccupancyFilter.h"
+#include "src/voice_engine/VoiceTiming.h"
 
-enum class VoiceCommand : uint8_t { Wake = 1, Arrive = 2, Leave = 3 };
-constexpr uint32_t VOICE_COMMAND_WINDOW_MS = 8000;
+enum class VoiceCommand : uint8_t { Wake = 1, Arrive = 2, Leave = 3, Timeout = 4 };
+constexpr uint32_t VOICE_COMMAND_WINDOW_MS = INHABITX_VOICE_WINDOW_MS;
 constexpr uint32_t VOICE_ARRIVAL_HOLD_MS = 120000;
 constexpr uint32_t VOICE_LEAVING_HOLD_MS = 10 * 60 * 1000;
 

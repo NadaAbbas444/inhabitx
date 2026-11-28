@@ -6,13 +6,14 @@
 #include "model_path.h"
 #include "VoicePolicy.h"
 #include "VoiceContinuity.h"
+#include "src/voice_engine/VoiceEngine.h"
 
 // MultiNet recognizes a custom activation phrase; this is NOT a trained WakeNet
 // model for "Hey Infineon". Accuracy/CPU use need validation on the actual board.
 constexpr bool VOICE_ENABLED = true;
 constexpr uint32_t VOICE_AUDIO_MAX_AGE_MS = 1000;
 constexpr uint32_t VOICE_RECOVERY_SAMPLES = SAMPLE_RATE * 6;
-struct VoiceEvent { VoiceCommand command; uint32_t capturedMs, epoch, generation; };
+struct VoiceEvent { VoiceCommand command; uint32_t capturedMs, epoch, generation; float confidence; };
 static QueueHandle_t voiceAudioQueue, voiceEventQueue;
 static bool voiceRunning = false;
 static volatile uint32_t voiceFeedMs = 0, voiceFeedEpoch = 0, voiceGaps = 0;
@@ -81,7 +82,7 @@ static esp_err_t fillVoiceAudio(void*, void* out, size_t len, size_t* bytesRead,
     return ESP_OK;
 }
 
-static void onVoiceEvent(void*, sr_event_t event, int commandId, int) {
+static void onVoiceEvent(void*, sr_event_t event, int commandId, int, float confidence) {
     if (__atomic_load_n(&voiceRecovering, __ATOMIC_SEQ_CST) == 2 &&
         voiceRecoveryReady(__atomic_load_n(&voiceSilenceSamples, __ATOMIC_SEQ_CST), SAMPLE_RATE,
             uint32_t(millis() - __atomic_load_n(&voiceRecoveryStartedMs, __ATOMIC_SEQ_CST)),
@@ -93,12 +94,13 @@ static void onVoiceEvent(void*, sr_event_t event, int commandId, int) {
     }
     if (!__atomic_load_n(&voiceRecovering, __ATOMIC_SEQ_CST) &&
         uint32_t(millis() - __atomic_load_n(&voiceRecoveredMs, __ATOMIC_SEQ_CST)) >= 500 &&
-        event == SR_EVENT_COMMAND && commandId >= 1 && commandId <= 3) {
+        ((event == SR_EVENT_COMMAND && commandId >= 1 && commandId <= 3) || event == SR_EVENT_TIMEOUT)) {
         const VoiceEvent command = {
-            static_cast<VoiceCommand>(commandId),
+            event == SR_EVENT_TIMEOUT ? VoiceCommand::Timeout : static_cast<VoiceCommand>(commandId),
             __atomic_load_n(&voiceFeedMs, __ATOMIC_RELAXED),
             __atomic_load_n(&voiceFeedEpoch, __ATOMIC_RELAXED),
-            __atomic_load_n(&voiceGeneration, __ATOMIC_SEQ_CST)
+            __atomic_load_n(&voiceGeneration, __ATOMIC_SEQ_CST),
+            confidence
         };
         if (xQueueSend(voiceEventQueue, &command, 0) != pdTRUE) {
             requestVoiceRecovery();
@@ -107,7 +109,7 @@ static void onVoiceEvent(void*, sr_event_t event, int commandId, int) {
     }
     // Continue recognizing the three phrases. Application policy gates room
     // commands behind the custom activation phrase, with an 8-second deadline.
-    if (event == SR_EVENT_COMMAND || event == SR_EVENT_TIMEOUT) sr_set_mode(SR_MODE_COMMAND);
+    if (event == SR_EVENT_COMMAND || event == SR_EVENT_TIMEOUT) voice_engine_set_mode(SR_MODE_COMMAND);
 }
 
 static void initVoiceRecognition() {
@@ -136,9 +138,11 @@ static void initVoiceRecognition() {
     static const sr_cmd_t commands[] = {
         {1, "Hey Infineon"},
         {2, "I am in the room"},
-        {3, "I am leaving the room"}
+        {3, "I am leaving the room"},
+        {2, "room occupied"},
+        {3, "room empty"}
     };
-    const esp_err_t status = sr_start(fillVoiceAudio, nullptr, SR_CHANNELS_MONO,
+    const esp_err_t status = voice_engine_start(fillVoiceAudio, nullptr, SR_CHANNELS_MONO,
         SR_MODE_COMMAND, "M", commands, sizeof commands / sizeof commands[0], onVoiceEvent, nullptr);
     if (status != ESP_OK) {
         Serial.printf("Voice: start failed (%s); automatic sensing continues.\n", esp_err_to_name(status));

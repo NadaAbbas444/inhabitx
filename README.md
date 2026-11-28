@@ -88,6 +88,14 @@ Rebuild locally with `Build-VoiceFirmware.ps1`, wait for **Build passed**, then 
 
 The occupancy model's backlog no longer invalidates intact speech PCM. Capture uses a separate physical epoch and speech checks its own block sequence. Queues hold about 1.5 seconds for occupancy and 0.5 seconds for speech in PSRAM; a 100 ms scheduling delay alone no longer disables recognition.
 
-A real speech gap cancels the active command window. Speech feeds silence for at least six seconds of samples and elapsed time, waits for an actual MultiNet timeout, then requires a new **Hey Infineon**. Old-generation commands are rejected. Recovery normally takes about 6–12 seconds with flowing microphone data; no reboot is required. Stale audio stays rejected. Existing user-declared occupancy overrides retain their original expiry.
+A real speech gap cancels the active command window. Speech feeds silence for at least six seconds of samples and elapsed time, waits for an actual MultiNet timeout, then requires a new **Hey Infineon**. Old-generation commands are rejected. Recovery normally takes about 6–20 seconds with flowing microphone data; no reboot is required. Stale audio stays rejected. Existing user-declared occupancy overrides retain their original expiry.
 
 Startup now logs the ESP32 reset reason and establishes a fresh runtime DMA-overflow baseline after model initialization. The repeated startup in the previous board log has no confirmed cause; this adds diagnostics, not a claim that reboots are fixed. Host continuity/recovery-boundary and voice-policy tests pass; runtime still needs board validation. Target compilation was attempted but remains blocked here by the compiler-launch error.
+
+## Wake phrase followed by a room command
+
+The local speech adapter at `src/voice_engine/VoiceEngine.c` derives from Arduino-ESP32 3.3.12. Unlike the installed adapter, it explicitly clears MultiNet state after each recognized phrase and timeout, before handing results to the application. Its 10-second decoder cycle covers the full 8-second application window; timing constants are shared. Installed Arduino files are unchanged.
+
+After rebuilding/uploading, say **Hey Infineon**, wait for **Voice: listening**, then try **room occupied** or **room empty**. These are additional aliases: **I am in the room** and **I am leaving the room** remain supported. Arrival/departure overrides stay at 2 minutes / 10 minutes. A successful match prints confidence. A recognized room command outside the wake window prints a diagnostic rather than silently disappearing.
+
+Startup now validates each registered phrase and reports conversion/graph failures even with Core Debug Level None. Expect `Voice engine: 5 phrases registered; fresh decoder per phrase`. Recognition still uses the stock English model, so pronunciation/accuracy need a board retest. Host policy tests cover late follow-up, timeout cancellation and fresh wake cycles; target compilation was attempted but remains blocked by the managed runner's compiler-launch error.

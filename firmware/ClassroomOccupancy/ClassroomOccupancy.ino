@@ -319,15 +319,22 @@ void loop() {
         if (__atomic_load_n(&voiceRecovering, __ATOMIC_SEQ_CST) || event.epoch != currentCaptureEpoch ||
             event.generation != __atomic_load_n(&voiceGeneration, __ATOMIC_SEQ_CST) ||
             uint32_t(now - event.capturedMs) > VOICE_AUDIO_MAX_AGE_MS) continue;
+        if (event.command == VoiceCommand::Timeout) {
+            if (voicePolicy.listening(now)) Serial.println("Voice: decoder timeout; say Hey Infineon again");
+            voicePolicy.cancelListening();
+            continue;
+        }
         if (voicePolicy.command(event.command, now)) {
-            Serial.println(event.command == VoiceCommand::Arrive ?
-                "Voice: room occupied confirmed by user" : "Voice: room marked empty for 10 minutes");
+            Serial.printf("Voice: %s (match %.0f%%)\n", event.command == VoiceCommand::Arrive ?
+                "room occupied confirmed by user" : "room marked empty for 10 minutes", event.confidence * 100.0f);
         } else if (event.command == VoiceCommand::Wake) {
             Serial.println("Voice: listening (8 seconds)...");
+        } else {
+            Serial.println("Voice: room command heard outside wake window; say Hey Infineon first");
         }
     }
     const bool listening = voicePolicy.listening(now);
-    if (wasListening && !listening && !voicePolicy.active(now)) Serial.println("Voice: command window closed");
+    if (wasListening && !listening && !voicePolicy.active(now)) Serial.println("Voice: command window closed; try room occupied / room empty after next wake");
     wasListening = listening;
     const bool manual = voicePolicy.active(now);
     if (wasManual && !manual) Serial.println("Voice: override expired; automatic detection resumed");
