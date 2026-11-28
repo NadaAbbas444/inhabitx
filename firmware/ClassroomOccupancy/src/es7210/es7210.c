@@ -346,12 +346,12 @@ esp_err_t es7210_config_volume(es7210_dev_handle_t handle, int8_t volume_db)
 esp_err_t es7210_reset(es7210_dev_handle_t handle) {
     ESP_RETURN_ON_FALSE(handle, ESP_ERR_INVALID_ARG, TAG, "invalid device handle pointer");
 
-    // ??????
-    ES7210_WRITE_REG(ES7210_RESET_REG00, 0xFF);  // ??????
-    vTaskDelay(pdMS_TO_TICKS(10));  // ?? 10ms,?????????
+    // 发送复位命令
+    ES7210_WRITE_REG(ES7210_RESET_REG00, 0xFF);  // 发送复位命令
+    vTaskDelay(pdMS_TO_TICKS(10));  // 等待 10ms，让设备完成复位过程
 
-    // ?????????
-    ES7210_WRITE_REG(ES7210_RESET_REG00, 0x32);  // ????????
+    // 恢复为正常工作状态
+    ES7210_WRITE_REG(ES7210_RESET_REG00, 0x32);  // 设置恢复工作状态
 
     ESP_LOGI(TAG, "Device reset completed.");
 

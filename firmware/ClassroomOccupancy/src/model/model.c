@@ -1,6 +1,6 @@
 /*
 * DEEPCRAFT Studio 5.16.7527.0+cda5e80bc6d2ff8f9dd9f30a82f9ad44f49da0e3
-* Copyright c 2023- Imagimob AB, All Rights Reserved.
+* Copyright © 2023- Imagimob AB, All Rights Reserved.
 * 
 * Generated at 11/27/2026 22:42:48 UTC. Any changes will be lost.
 * 
