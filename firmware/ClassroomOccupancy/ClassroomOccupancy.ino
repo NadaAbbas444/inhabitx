@@ -7,6 +7,8 @@
 #include "driver/i2c.h"
 #include "driver/i2s_tdm.h"
 #include "esp_timer.h"
+#include "esp_heap_caps.h"
+#include "freertos/idf_additions.h"
 #include "src/es7210/es7210.h"
 #include "ModelBridge.h"
 #include "OccupancyFilter.h"
@@ -38,6 +40,7 @@ struct Result {
     RoomState state;
 };
 static QueueHandle_t audioQueue, resultQueue;
+static TaskHandle_t captureHandle, modelHandle, networkHandle;
 static i2s_chan_handle_t rxChannel;
 static es7210_dev_handle_t adc;
 static volatile uint32_t streamEpoch = 0, droppedBlocks = 0, dmaOverflows = 0, readErrors = 0;
@@ -114,6 +117,7 @@ static void initMicrophone() {
 }
 
 static void captureTask(void*) {
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     int16_t raw[BLOCK_FRAMES * TDM_SLOTS];
     AudioBlock block = {};
     uint32_t sequence = 0;
@@ -155,6 +159,7 @@ static void captureTask(void*) {
 }
 
 static void inferenceTask(void*) {
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     AudioBlock block;
     OccupancyFilter occupancy;
     uint32_t epoch = UINT32_MAX, expected = 0, samples = 0, stuckSamples = 0;
@@ -212,18 +217,38 @@ void setup() {
     Serial.println("ClassroomOccupancy | starting microphone and model...");
     if (SERIAL_VERBOSE)
         Serial.println("Model: 16kHz mono, 1s context; 0=unlabeled 1=background 2=human_activity");
-    audioQueue = xQueueCreate(QUEUE_BLOCKS, sizeof(AudioBlock));
+    if (!psramFound()) must(ESP_ERR_NO_MEM, "OPI PSRAM required for occupancy plus voice");
+    if (!ClassroomModel_allocate()) must(ESP_ERR_NO_MEM, "model workspace in PSRAM");
+    audioQueue = xQueueCreateWithCaps(QUEUE_BLOCKS, sizeof(AudioBlock), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     resultQueue = xQueueCreate(1, sizeof(Result));
     nodeQueue = xQueueCreate(1, sizeof(NodeSnapshot));
     if (!audioQueue || !resultQueue || !nodeQueue) must(ESP_ERR_NO_MEM, "queues");
     initMicrophone();
-    initVoiceRecognition();
-    if (xTaskCreatePinnedToCore(captureTask, "mic-capture", 8192, nullptr, 5, nullptr, 0) != pdPASS)
+    // Reserve application stacks first; tasks wait for notification until all
+    // model initialization is complete. Stacks and DMA remain in internal RAM.
+    if (xTaskCreatePinnedToCore(captureTask, "mic-capture", 8192, nullptr, 5, &captureHandle, 0) != pdPASS)
         must(ESP_ERR_NO_MEM, "capture task");
-    if (xTaskCreatePinnedToCore(inferenceTask, "model", 16384, nullptr, 3, nullptr, 1) != pdPASS)
+    if (xTaskCreatePinnedToCore(inferenceTask, "model", 16384, nullptr, 3, &modelHandle, 1) != pdPASS)
         must(ESP_ERR_NO_MEM, "inference task");
-    if (xTaskCreatePinnedToCore(networkTask, "inhabitx-mqtt", 12288, nullptr, 1, nullptr, 0) != pdPASS)
+    if (xTaskCreatePinnedToCore(networkTask, "inhabitx-mqtt", 12288, nullptr, 1, &networkHandle, 0) != pdPASS)
         must(ESP_ERR_NO_MEM, "network task");
+    Serial.printf("Memory before voice: internal %lu KB | largest %lu KB | PSRAM %lu KB\n",
+                  (unsigned long)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) / 1024),
+                  (unsigned long)(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) / 1024),
+                  (unsigned long)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) / 1024));
+    initVoiceRecognition();
+    Serial.printf("Memory after voice: internal %lu KB | largest %lu KB | PSRAM %lu KB\n",
+                  (unsigned long)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) / 1024),
+                  (unsigned long)(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) / 1024),
+                  (unsigned long)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) / 1024));
+    // Long speech initialization can leave old DMA audio queued. Start fresh
+    // while capture is still parked, then release all application tasks.
+    must(i2s_channel_disable(rxChannel), "I2S stop after voice init");
+    __atomic_add_fetch(&streamEpoch, 1, __ATOMIC_RELAXED);
+    must(i2s_channel_enable(rxChannel), "I2S restart after voice init");
+    xTaskNotifyGive(modelHandle);
+    xTaskNotifyGive(captureHandle);
+    xTaskNotifyGive(networkHandle);
 }
 
 void loop() {

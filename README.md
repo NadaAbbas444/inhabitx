@@ -55,7 +55,7 @@ The existing occupancy filter confirms activity across 3 predictions and holds o
 
 ## Validation
 
-Host tests cover JSON encoding and stale/invalid snapshot handling; see [test source](firmware/tests/inhabitx_contract_test.cpp). Generated model hashes remain unchanged. The local ESP32 target build was blocked before compiler launch by Windows' Illegal System DLL Relocation error. User serial output showed inference running and waiting for NTP; the latest time-sync changes and live MQTT delivery remain unverified on hardware.
+Host tests cover JSON encoding and stale/invalid snapshot handling; see [test source](firmware/tests/inhabitx_contract_test.cpp). The original model export and header remain unchanged; active model.c adapts workspace allocation into PSRAM while preserving all weights and inference math. The local ESP32 target build was blocked before compiler launch by Windows' Illegal System DLL Relocation error. User serial output showed inference running and waiting for NTP; the latest time-sync changes and live MQTT delivery remain unverified on hardware.
 
 The original Infineon PSOC Edge integration remains in [board/](board/) for reference; its sensor function is a placeholder. The ESP32 firmware is in `firmware/ClassroomOccupancy/`.
 
@@ -75,3 +75,11 @@ Select **InhabitX Voice 16M** and **OPI PSRAM** before uploading; the bundled Ar
 This implementation uses continuous English MultiNet command recognition to gate room commands behind the custom activation phrase. It is **not a custom-trained WakeNet model**. Recognition accuracy for “Infineon”, false triggers, and running speech alongside the occupancy model need hardware validation. A speech audio gap disables voice until reboot while automatic detection continues.
 
 The main receives the normal occupancy boolean plus confirmation text; its current UI ignores the extra text fields. Host voice-policy and message tests pass. The target build remains blocked by the local Windows compiler-launch issue; voice recognition has not been tested on a board. See the [voice instructions and test checklist](firmware/ClassroomOccupancy/README.txt).
+
+## Runtime RAM allocation fix
+
+If startup reports `FATAL: inference task: ESP_ERR_NO_MEM` after loading the speech models, rebuild the updated firmware. The occupancy model's **86,792-byte writable workspace** and both PCM queues now allocate in **PSRAM**, freeing about **110 KiB of internal RAM**. Capture, inference and MQTT task stacks are reserved in internal RAM before speech starts. Startup notifications hold these tasks until initialization completes; I2S is then restarted to discard old startup audio. OPI PSRAM is required.
+
+The original generated source is preserved exactly at `src/model/model.c.reference` (not compiled). The adapted `model.c` changes only workspace allocation; weights and calculations remain unchanged. A host comparison across three reset segments produced **12 bit-identical predictions** using static and heap-backed workspace. Startup now prints free internal RAM, its largest block and free PSRAM before/after speech initialization.
+
+Rebuild locally with `Build-VoiceFirmware.ps1`, wait for **Build passed**, then upload the new build using the direct-upload command or the matching IDE partition setting. A fresh target compile remains blocked in the managed runner by its Windows compiler-launch error; the allocation change still needs a board retest.

@@ -3,6 +3,7 @@
 extern "C" {
 #define restrict __restrict__
 #include "src/model/model.h"
+int ClassroomModel_allocate(void);
 #undef restrict
 }
 static_assert(IMAI_DATA_IN_COUNT == 1, "Expected streaming mono PCM input");

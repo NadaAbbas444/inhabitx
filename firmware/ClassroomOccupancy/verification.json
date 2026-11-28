@@ -1,7 +1,7 @@
 {
-  "generated_model_files_unchanged": true,
+  "generated_model_files_unchanged": false,
   "sha256": {
-    "model.c": "9373272c47f3da920ecb846b78fced4715326038582330c26ce2286d7a2f0d1f",
+    "model.c": "27d258e5323eead389fa626a802059a813ecb78b4739a89f89906032b0d53a20",
     "model.h": "a72f0b1bec76eb04e246494b913156dd83de335bf710450d4068032e32ab3324"
   },
   "target_compile_passed": false,
@@ -68,5 +68,19 @@
     "fresh_compile_blocker": "Windows Illegal System DLL Relocation before compiler launch",
     "ide_selection_changed": false,
     "script": "Build-VoiceFirmware.ps1"
+  },
+  "runtime_ram_fix": {
+    "adaptation": "model workspace and PCM queues in PSRAM; internal task stacks reserved before speech",
+    "model_workspace_bytes_in_psram": 86792,
+    "original_export_reference": "src/model/model.c.reference",
+    "original_reference_sha256": "9373272c47f3da920ecb846b78fced4715326038582330c26ce2286d7a2f0d1f",
+    "model_header_unchanged": true,
+    "model_weights_and_math_unchanged": true,
+    "host_heap_vs_static_predictions_bit_identical": true,
+    "predictions_compared": 12,
+    "reset_segments": 3,
+    "stacks_and_dma_in_internal_ram": true,
+    "fresh_target_compile_passed": false,
+    "hardware_retest_passed": false
   }
 }

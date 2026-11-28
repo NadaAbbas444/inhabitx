@@ -13,6 +13,7 @@
 static QueueHandle_t nodeQueue;
 
 static void networkTask(void*) {
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     if (!SECRET_WIFI_SSID[0] || !SECRET_MQTT_PASSWORD[0]) {
         Serial.println("InhabitX: offline sensing; copy secrets.h.example to secrets.h and fill credentials.");
         vTaskDelete(nullptr);

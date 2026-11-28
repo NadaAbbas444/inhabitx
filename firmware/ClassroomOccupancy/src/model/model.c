@@ -188,8 +188,34 @@
 #include "model.h"
 
 // Working memory
+#if defined(ESP_PLATFORM) || defined(CLASSROOM_MODEL_HEAP_TEST)
+// Application adaptation: move only writable workspace to PSRAM. The original
+// export is retained byte-for-byte in model.c.reference; weights/math are unchanged.
+#include <stdlib.h>
+#if defined(ESP_PLATFORM)
+#include "esp_heap_caps.h"
+#endif
+static int8_t *_buffer;
+static int8_t *_state;
+int ClassroomModel_allocate(void) {
+    if (_buffer && _state) return 1;
+#if defined(ESP_PLATFORM)
+    _buffer = heap_caps_calloc(1, 76800, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    _state = heap_caps_calloc(1, 9992, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+#else
+    _buffer = calloc(1, 76800);
+    _state = calloc(1, 9992);
+#endif
+    if (_buffer && _state) return 1;
+    free(_buffer); free(_state);
+    _buffer = NULL; _state = NULL;
+    return 0;
+}
+#else
 static int8_t _buffer[76800];
 static int8_t _state[9992];
+int ClassroomModel_allocate(void) { return 1; }
+#endif
 
 // Parameters
 static const uint32_t _k5[] = {

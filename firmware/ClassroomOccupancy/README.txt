@@ -1,3 +1,32 @@
+RUNTIME RAM FIX FOR INFERENCE-TASK ESP_ERR_NO_MEM
+The speech models loaded successfully, but their allocations left too little
+internal RAM to create the inference task's 16 KB stack. The firmware now:
+- Allocates the model's 76800-byte workspace and 9992-byte state in PSRAM.
+- Allocates the 32-block capture and 16-block speech audio queues in PSRAM.
+- Reserves capture, inference and MQTT task stacks in INTERNAL RAM before
+  speech initialization. Tasks wait on startup notifications until ready.
+- Restarts I2S after speech initialization to discard old startup DMA audio.
+- Prints internal free/largest-block and PSRAM totals before and after voice.
+
+These changes relocate about 110 KiB of memory out of internal RAM. No task
+stack or DMA buffer is placed in PSRAM. OPI PSRAM is now required; failure
+to allocate model workspace stops with UNKNOWN before starting recognition.
+The original model.c is preserved byte-for-byte as src/model/model.c.reference
+(not a compiled source extension). The adapted model.c changes only writable
+workspace allocation: weights, feature extraction and inference math match.
+model.h is unchanged. Re-exporting the model requires reapplying this adapter
+and rerunning the comparison; never copy only the pointer declarations.
+
+Host comparison: original static buffers versus heap-backed buffers, silence
+and deterministic nonzero signals over 3 model resets, 12 predictions total;
+all output scores match bit-for-bit. The test is tests/model_memory_test.c,
+compiled once with the original reference and once with the adapted model
+and CLASSROOM_MODEL_HEAP_TEST defined. It also checks idempotent allocation.
+This verifies inference parity, not ESP32 timing or available heap on board.
+The managed compiler-launch limitation still prevents a fresh target build
+here. Rebuild with Build-VoiceFirmware.ps1, require Build passed, then upload
+that new build. Runtime coexistence of both models still needs board testing.
+
 LOCAL BUILD COMMAND (AVOIDS A STALE ARDUINO IDE MENU SELECTION)
 Installing a partition menu option does not select it in an open IDE.
 If the error still says Maximum is 3145728 bytes, the build is still using
@@ -21,7 +50,7 @@ ClassroomOccupancy - Waveshare ESP32-S3-AUDIO-Board
 ================================================
 
 Open ClassroomOccupancy.ino in Arduino IDE. Keep all headers and the src
-directory beside it. The exact supplied model.c/model.h are bundled unchanged.
+directory beside it. The supplied model weights and inference calculations are bundled unchanged.
 The ES7210 C driver is bundled too; no additional Arduino libraries required.
 
 INHABITX SETUP
@@ -184,7 +213,7 @@ and speech inference run concurrently and need load/memory testing on board.
 If the speech queue/audio stream has a gap, voice commands are disabled
 until reboot and automatic detection continues; this avoids trusting a
 partially lost command. A missing speech model/partition disables voice
-with a serial explanation. The existing DEEPCRAFT files are unchanged.
+with a serial explanation. DEEPCRAFT weights/math are unchanged; its workspace now allocates in PSRAM.
 
 Voice-confirmed publishes retain the normal room/occupied/ts fields and add:
   "source":"voice","message":"Room occupied confirmed by user"
@@ -237,8 +266,8 @@ Audio remains local; the sketch does not save or transmit microphone audio.
 
 VERIFICATION STATUS
 Source/header/API review completed against the installed Arduino-ESP32
-3.3.12 headers and supplied generated model. Both generated model files
-must remain byte-identical to the originals.
+3.3.12 headers and supplied generated model. The model header and original export reference
+remain byte-identical to the originals; model.c now adapts workspace allocation.
 A target build was attempted but Windows prevented the installed compiler
 from launching: Illegal System DLL Relocation. No compiler result or board
 execution has been obtained in this session. Use Arduino IDE Verify first.

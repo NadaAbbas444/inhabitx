@@ -84,9 +84,11 @@ static void initVoiceRecognition() {
         Serial.println("Voice: disabled; missing ESP-SR English models. Upload with ESP SR 16M selected.");
         return;
     }
-    voiceAudioQueue = xQueueCreate(16, sizeof(AudioBlock));
+    voiceAudioQueue = xQueueCreateWithCaps(16, sizeof(AudioBlock), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     voiceEventQueue = xQueueCreate(8, sizeof(VoiceEvent));
     if (!voiceAudioQueue || !voiceEventQueue) {
+        if (voiceAudioQueue) { vQueueDeleteWithCaps(voiceAudioQueue); voiceAudioQueue = nullptr; }
+        if (voiceEventQueue) { vQueueDelete(voiceEventQueue); voiceEventQueue = nullptr; }
         Serial.println("Voice: disabled; insufficient queue memory.");
         return;
     }
