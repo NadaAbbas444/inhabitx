@@ -53,6 +53,23 @@ OccupancyFilter.h after validation if those exact application timings are needed
 Network scheduling and added TLS RAM still require hardware validation; monitor
 dropped blocks, overflows and queue depth with Wi-Fi active.
 
+INSTALL THE 4 MB VOICE PARTITION (WINDOWS, ONCE PER CORE INSTALL)
+The voice build exceeds the stock 3 MB app slot. Download this branch first,
+close Arduino IDE, open PowerShell in the ClassroomOccupancy sketch folder:
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-VoicePartition.ps1
+Restart Arduino IDE and choose the new InhabitX Voice 16M partition option.
+The installer defaults to Arduino-ESP32 3.3.12 under LOCALAPPDATA/Arduino15.
+Pass -PlatformPath for another installation. The installer preserves existing
+board entries, adds a separate menu option, and installs its partition CSV.
+
+partitions.csv uses two 4 MB app slots and 4 MB SPIFFS, keeping the speech
+model at 0xC10000 (3.9 MB) and coredump at 0xFF0000. Do not move the model
+without updating the upload address. build_opt.h preserves -O3 and defines
+ESP_SR's compatible-partition macro for the custom board menu option.
+A local partitions.csv alone is not sufficient: Arduino IDE must also use
+upload.maximum_size=4194304, supplied by the new menu option. Leave the
+stock ESP SR 16M option available for other projects. Rerun after core updates.
+
 ARDUINO SETTINGS
 Boards Manager: esp32 by Espressif Systems, version 3.3.12 (installed locally).
 Board: ESP32S3 Dev Module
@@ -61,11 +78,11 @@ Flash Size: 16MB
 PSRAM: OPI PSRAM
 USB Mode: Hardware CDC and JTAG
 USB CDC On Boot: Enabled
-Partition Scheme: ESP SR 16M (3MB APP/6MB SPIFFS/3.9MB MODEL).
+Partition Scheme: InhabitX Voice 16M (4MB APP/4MB SPIFFS/3.9MB MODEL).
 Use normal USB upload, then Serial Monitor at 115200 baud.
 Do not select the Arduino Nano ESP32 board or an ESP32-C3 board.
 Voice requires the ESP-SR model partition and bundled English model image.
-Selecting ESP SR 16M makes Arduino copy/flash srmodels.bin automatically.
+Selecting InhabitX Voice 16M makes Arduino copy/flash srmodels.bin automatically.
 build_opt.h supplies -O3 for the generated inference code.
 
 HARDWARE
@@ -141,7 +158,7 @@ model; continuous command recognition has different CPU/power/false-trigger
 characteristics, and brand pronunciation needs testing. No cloud service
 or audio upload is used. Recognition is fixed-phrase, not open dictation.
 
-Select ESP SR 16M and OPI PSRAM before uploading. No extra wiring is needed.
+Select InhabitX Voice 16M and OPI PSRAM before uploading. No extra wiring is needed.
 Only captureTask reads I2S; it fans out the selected mono PCM to a separate
 speech queue. ESP_SR handles the audio front end and command model. Model
 and speech inference run concurrently and need load/memory testing on board.
@@ -163,7 +180,7 @@ Unknown/stale/faulted automatic audio still pauses publishing, including
 during a voice override; no old audio result is refreshed just to keep online.
 
 TESTING VOICE
-1. Verify/upload with ESP SR 16M; expect "Voice: ready".
+1. Verify/upload with InhabitX Voice 16M; expect "Voice: ready".
 2. Say a room command without "Hey Infineon": no manual override.
 3. Say "Hey Infineon", pause, then "I am in the room": occupied confirmation.
 4. Repeat wake + leaving: empty override; sound must not undo it for 10 minutes.
@@ -247,3 +264,10 @@ Waveshare factory speech recognition/display application. The full factory
 demo source was not retrieved or built, so example documentation checks
 should not be mistaken for a source-level audit of that entire archive.
 Generated model files retain their original DEEPCRAFT notices and terms.
+
+PARTITION FIX VERIFICATION
+User build screenshot: application 3208467 bytes, stock maximum 3145728.
+New maximum: 4194304 per app slot. Original model address is unchanged.
+CSV generation/round-trip checked using Arduino-ESP32 3.3.12's partition tool
+with --flash-size 16MB. The installer has been reviewed but not executed on
+the Windows machine in this turn. No new target compilation or hardware test.

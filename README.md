@@ -4,10 +4,27 @@ Arduino firmware for the **Waveshare ESP32-S3-AUDIO-Board**: onboard ES7210 micr
 
 The branch is named `feat-run-node-on-XIAO`, but this firmware currently targets the Waveshare audio board. A Seeed XIAO board needs its own microphone driver and pin configuration.
 
+## Fixing the voice firmware size limit (Windows)
+
+The combined voice and occupancy build exceeds the stock ESP SR 16M 3 MB application limit. This sketch includes a custom `partitions.csv` with **two 4 MB app slots**, 4 MB SPIFFS, and the original speech-model partition at **0xC10000**. The IDE size limit and speech-model upload address must match the layout.
+
+1. Download this branch and close Arduino IDE.
+2. Open PowerShell in `firmware/ClassroomOccupancy` and run:
+
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\Install-VoicePartition.ps1
+   ```
+
+3. Restart Arduino IDE. With **ESP32S3 Dev Module** selected, choose **Tools → Partition Scheme → InhabitX Voice 16M (4MB APP/4MB SPIFFS/3.9MB MODEL)**. Keep **Flash Size = 16MB** and **PSRAM = OPI PSRAM**. Verify and upload again.
+
+The script registers a separate menu option and preserves other board definitions. It installs into Arduino-ESP32 **3.3.12** by default; pass `-PlatformPath` for another installation. Rerun after updating the ESP32 core. Keep the sketch's `partitions.csv` and `build_opt.h` alongside the .ino. The latter preserves -O3 and marks this stock-compatible speech partition for ESP_SR's compile-time check.
+
+The custom table was generated and validated with Espressif's partition tool for 16 MB flash. The reported 3,208,467-byte application fits the 4,194,304-byte slots. This is layout validation, not a new target build or hardware test.
+
 ## Setup
 
 1. Open [ClassroomOccupancy.ino](firmware/ClassroomOccupancy/ClassroomOccupancy.ino) in Arduino IDE.
-2. Install **esp32 by Espressif Systems 3.3.12**. Select **ESP32S3 Dev Module**, 16 MB flash, OPI PSRAM, USB CDC enabled, and **ESP SR 16M (3MB APP/6MB SPIFFS/3.9MB MODEL)** partition.
+2. Install **esp32 by Espressif Systems 3.3.12**. Select **ESP32S3 Dev Module**, 16 MB flash, OPI PSRAM, USB CDC enabled, and **InhabitX Voice 16M (4MB APP/4MB SPIFFS/3.9MB MODEL)** partition.
 3. Copy [secrets.h.example](firmware/ClassroomOccupancy/secrets.h.example) to `secrets.h` beside the sketch. Fill in your 2.4 GHz Wi-Fi credentials and HiveMQ `devices` password locally.
 4. Set the room in [InhabitXConfig.h](firmware/ClassroomOccupancy/InhabitXConfig.h); default: **Z.1.09**. Stop any other node publishing for that room.
 5. Verify and upload. Keep the main application running for the [room dashboard](https://nadaabbas444.github.io/inhabitx/) to update.
@@ -41,7 +58,7 @@ Say **Hey Infineon**, pause for `Voice: listening`, then within 8 seconds say:
 
 Say the activation phrase again before each command. Arrival cancels an active leaving override immediately. Automatic detection resumes after the override expires. Audio remains on the board.
 
-Select **ESP SR 16M** and **OPI PSRAM** before uploading; the bundled Arduino-ESP32 speech models are flashed automatically. A missing model disables voice with a serial notice. `VoicePolicy.h` controls the durations.
+Select **InhabitX Voice 16M** and **OPI PSRAM** before uploading; the bundled Arduino-ESP32 speech models are flashed automatically. A missing model disables voice with a serial notice. `VoicePolicy.h` controls the durations.
 
 This implementation uses continuous English MultiNet command recognition to gate room commands behind the custom activation phrase. It is **not a custom-trained WakeNet model**. Recognition accuracy for “Infineon”, false triggers, and running speech alongside the occupancy model need hardware validation. A speech audio gap disables voice until reboot while automatic detection continues.
 

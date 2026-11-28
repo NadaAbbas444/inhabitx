@@ -1,1 +1,2 @@
 -O3
+-DARDUINO_PARTITION_esp_sr_16

@@ -43,5 +43,17 @@
     "target_compile_passed": false,
     "target_compile_blocker": "Windows Illegal System DLL Relocation before compiler launch",
     "hardware_tested": false
+  },
+  "partition_fix": {
+    "app_slot_bytes": 4194304,
+    "app_slots": 2,
+    "flash_bytes": 16777216,
+    "model_offset": "0xC10000",
+    "model_bytes": 4063232,
+    "user_reported_program_bytes": 3208467,
+    "user_reported_old_limit_bytes": 3145728,
+    "partition_table_verified": true,
+    "windows_installer_executed": false,
+    "target_rebuild_tested": false
   }
 }
