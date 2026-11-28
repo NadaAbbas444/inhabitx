@@ -98,7 +98,13 @@ static void reason_text(ix_book_err_t err, const ix_booking_t *clash, int room, 
 {
     char a[8], b[8];
     switch (err) {
-    case IX_BOOK_OK:          snprintf(buf, n, "Available"); break;
+    case IX_BOOK_OK: {
+        /* only left when nothing else fits: someone sits there without a booking */
+        ix_status_t st;
+        ix_room_status(room, ix_now(), &st);
+        snprintf(buf, n, s_from <= ix_now() && st.state == IX_OCCUPIED ? "In use, not booked" : "Available");
+        break;
+    }
     case IX_BOOK_ERR_SEATS:   snprintf(buf, n, "Only %u seats", ix_room(room)->seats); break;
     case IX_BOOK_ERR_OVERLAP:
         ui_fmt_hm(a, sizeof a, clash->start);

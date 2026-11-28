@@ -236,8 +236,8 @@ int ix_active_bookings_for(const char *email, time_t now)
     return n;
 }
 
-ix_book_err_t ix_room_check(int room, time_t start, time_t end, uint8_t people,
-                            time_t now, const ix_booking_t **clash)
+static ix_book_err_t room_check_strict(int room, time_t start, time_t end, uint8_t people,
+                                       time_t now, const ix_booking_t **clash)
 {
     if (clash) *clash = NULL;
     if (room < 0 || room >= s_room_count) return IX_BOOK_ERR_TIME;
@@ -254,6 +254,20 @@ ix_book_err_t ix_room_check(int room, time_t start, time_t end, uint8_t people,
     }
     if (start <= now && (s_rooms[room].occupied || is_offline(room, now)))
         return IX_BOOK_ERR_BUSY;
+    return IX_BOOK_OK;
+}
+
+ix_book_err_t ix_room_check(int room, time_t start, time_t end, uint8_t people,
+                            time_t now, const ix_booking_t **clash)
+{
+    ix_book_err_t err = room_check_strict(room, start, end, people, now, clash);
+    if (err != IX_BOOK_ERR_BUSY || is_offline(room, now)) return err;
+
+    /* Someone is in the room but nobody booked it. It stays off the list
+     * while another room fits; if none does, it can be booked after all. */
+    for (int i = 0; i < s_room_count; i++)
+        if (i != room && room_check_strict(i, start, end, people, now, NULL) == IX_BOOK_OK)
+            return IX_BOOK_ERR_BUSY;
     return IX_BOOK_OK;
 }
 
