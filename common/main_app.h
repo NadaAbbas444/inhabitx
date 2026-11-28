@@ -50,7 +50,7 @@ void main_app_poll(main_publish_fn publish);
 /* Current Unix time. The board has no clock of its own, so it is set from
  * the "ts" of the first node message that carries a real time (the fake
  * nodes on the laptop send one every 2 s). Until then main_app_time_known()
- * is false and bookings are refused as "time". */
+ * is false and bookings are refused as "clock". */
 time_t ix_now(void);
 bool main_app_time_known(void);
 

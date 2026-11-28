@@ -5,12 +5,13 @@
 #   iwr https://raw.githubusercontent.com/NadaAbbas444/inhabitx/main-board-infineon/lab.ps1 -OutFile lab.ps1
 #   powershell -ExecutionPolicy Bypass -File lab.ps1            # main with the screen UI
 #   powershell -ExecutionPolicy Bypass -File lab.ps1 -NoScreen  # main without screen
+#   powershell -ExecutionPolicy Bypass -File lab.ps1 -Check     # only read the board: Wi-Fi, broker, clock
 #
 # It downloads this branch and Infineon's examples, asks for the broker
 # password (Wi-Fi name and password are read from the lab's wifi_connect.bat),
-# then builds and programs the board. Run it again after a failure: finished
+# then builds and programs the board and checks its serial output. Run it again after a failure: finished
 # steps are skipped. Passwords end up only in secrets.h on the lab PC.
-param([switch]$NoScreen)
+param([switch]$NoScreen, [switch]$Check)
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $HOME 'Documents')
 
@@ -26,6 +27,8 @@ function New-Project($name, $example) {
     & $creator --board-id $board --app-id $example --user-app-name $name --target-dir .
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path "$name\Makefile")) { throw "creating $name failed (run lab.ps1 again)" }
 }
+
+if (-not $Check) {     # -Check skips steps 1-5
 
 # 1. our code
 if (-not (Test-Path 'ix\with-screen')) {
@@ -82,10 +85,46 @@ if ($NoScreen) {
 }
 
 # 5. build + program
-Step "building and programming $app (first build: about 5 minutes)"
-$env:Path = (Join-Path $tools 'modus-shell\bin') + ';' + $env:Path
-$env:CY_TOOLS_PATHS = $tools -replace '\\', '/'
-Set-Location $app
-make program -j8
-if ($LASTEXITCODE -ne 0) { throw 'build or programming failed: send the first error above' }
-Step 'done: open Tera Term > Serial > KitProg3 USB-UART, Setup > Serial port > 115200, then press RESET in the lab page'
+    Step "building and programming $app (first build: about 5 minutes)"
+    $env:Path = (Join-Path $tools 'modus-shell\bin') + ';' + $env:Path
+    $env:CY_TOOLS_PATHS = $tools -replace '\\', '/'
+    Push-Location $app
+    make program -j8
+    $ok = $LASTEXITCODE -eq 0
+    Pop-Location
+    if (-not $ok) { throw 'build or programming failed: send the first error above' }
+}
+
+# 6. check: read the board's serial output and look for Wi-Fi, broker and clock
+Step 'checking the board (close Tera Term first, it would hold the port)'
+$dev = Get-CimInstance Win32_PnPEntity | Where-Object { $_.Name -match 'KitProg3 USB-UART \((COM\d+)\)' } | Select-Object -First 1
+if (-not $dev) { throw 'no KitProg3 USB-UART port found' }
+$com = [regex]::Match($dev.Name, 'COM\d+').Value
+$port = New-Object System.IO.Ports.SerialPort $com, 115200
+$port.ReadTimeout = 500
+$port.Open()
+Write-Host "reading $com. Now press RESET on the lab page (Input Panel > Board Controls)." -ForegroundColor Yellow
+$got = @{ wifi = $false; broker = $false; clock = $false }
+$hints = @()
+$until = (Get-Date).AddSeconds(150)
+while ((Get-Date) -lt $until -and -not ($got.wifi -and $got.broker -and $got.clock)) {
+    try { $line = $port.ReadLine().TrimEnd() } catch [System.TimeoutException] { continue }
+    Write-Host "  board: $line"
+    if ($line -match 'Successfully connected to Wi-Fi') { $got.wifi = $true }
+    if ($line -match 'MQTT connection successful') { $got.broker = $true }
+    if ($line -match 'main: clock set') { $got.clock = $true }
+    if ($line -match 'Wi-Fi Connection failed') { $hints += 'Wi-Fi failed: check the Wi-Fi name/password in ixmain\proj_cm33_ns\secrets.h (capital letters count)' }
+    if ($line -match 'sntp: no answer') { $hints += 'no internet time (NTP blocked?): give it once with a node message, e.g. on the laptop: .venv/bin/python tools/fake_nodes.py --room Z.1.12' }
+    if ($line -match 'MQTT connect failed|Connection refused|not authorized') { $hints += 'broker refused: check the broker password in secrets.h' }
+}
+$port.Close()
+Write-Host ''
+foreach ($k in 'wifi', 'broker', 'clock') {
+    if ($got[$k]) { Write-Host "  OK      $k" -ForegroundColor Green } else { Write-Host "  MISSING $k" -ForegroundColor Red }
+}
+$hints | Select-Object -Unique | ForEach-Object { Write-Host "  hint: $_" -ForegroundColor Yellow }
+if ($got.wifi -and $got.broker -and $got.clock) {
+    Step 'all good: book a room on https://nadaabbas444.github.io/inhabitx/ and watch it here or on the screen'
+} else {
+    Step 'not all there yet: run  powershell -ExecutionPolicy Bypass -File lab.ps1 -Check  to look again'
+}

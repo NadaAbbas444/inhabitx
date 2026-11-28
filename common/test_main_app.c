@@ -40,10 +40,10 @@ int main(void)
     CHECK(strcmp(will, MAIN_WILL_PAYLOAD) == 0);
     CHECK(strcmp(MAIN_WILL_TOPIC, IX_TOPIC_ROOMS) == 0);
 
-    /* before the clock is set: bookings refused as "time", nothing leaks */
+    /* before the clock is set: bookings refused as "clock", nothing leaks */
     CHECK(!main_app_time_known());
     msg("inhabitx/Z/bookings/new", "{\"req\":\"a1\",\"room\":\"Z.1.10\",\"from\":\"10:00\",\"to\":\"11:00\",\"people\":2,\"name\":\"Ann\",\"email\":\"ann@uni.example\"}");
-    CHECK(strcmp(last_on("inhabitx/Z/replies/a1"), "inhabitx/Z/replies/a1|0|{\"ok\":false,\"error\":\"time\"}") == 0);
+    CHECK(strcmp(last_on("inhabitx/Z/replies/a1"), "inhabitx/Z/replies/a1|0|{\"ok\":false,\"error\":\"clock\"}") == 0);
 
     /* a node without a clock (ts 0) doesn't set it, a fake node does */
     msg("inhabitx/Z/1/Z.1.10/state", "{\"room\":\"Z.1.10\",\"occupied\":false,\"ts\":0}");
@@ -54,6 +54,16 @@ int main(void)
     tm.tm_hour = 10; tm.tm_min = 5; tm.tm_sec = 0;
     time_t at10 = mktime(&tm);                         /* 10:05 today, local time */
     char node[128];
+
+    /* the Wi-Fi core's SNTP time sets it (9:05 here), without a reply */
+    int sent_before = s_n;
+    snprintf(node, sizeof node, "{\"ts\":%lld}", (long long)(at10 - 3600));
+    msg("inhabitx/Z/_clock", node);
+    CHECK(main_app_time_known());
+    CHECK(ix_now() - (at10 - 3600) >= 0 && ix_now() - (at10 - 3600) < 3);
+    CHECK(s_n == sent_before);
+
+    /* a node's real time more than 30 s off corrects it (10:05) */
     snprintf(node, sizeof node, "{\"room\":\"Z.1.10\",\"occupied\":false,\"ts\":%lld}", (long long)at10);
     msg("inhabitx/Z/1/Z.1.10/state", node);
     CHECK(main_app_time_known());

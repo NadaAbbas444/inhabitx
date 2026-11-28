@@ -11,7 +11,7 @@ The main (bookings, ghost release, lost & found, answering the web page) running
 ## Before you start
 
 - **Only one main at a time.** Stop `main_sim` on the laptop while the board is the main: both log in as `inhabitx-main-Z` and would keep kicking each other off.
-- **Keep the fake nodes running on the laptop** (`.venv/bin/python tools/fake_nodes.py --shuffle 3` on `main`). Besides the rooms, they give the board the time: it has no clock, and until the first node message with a real time arrives, bookings are refused with `time`.
+- **The time** comes from the internet (SNTP, UDP port 123) once the board is on Wi-Fi; until then bookings are refused with `clock` ("The building's clock isn't set yet" on the page). If the network blocks NTP, a node message with a real `"ts"` sets it too (e.g. the fake nodes: `.venv/bin/python tools/fake_nodes.py --room Z.1.12` on `main`).
 - **Wi-Fi:** the board needs a network with internet. In a live lab, ask the staff for one and whether port 8883 is open.
 
 ## Infineon Live Lab: one command
@@ -24,7 +24,7 @@ iwr https://raw.githubusercontent.com/NadaAbbas444/inhabitx/main-board-infineon/
 powershell -ExecutionPolicy Bypass -File lab.ps1
 ```
 
-Add `-NoScreen` for the main without screen. The script reads the lab Wi-Fi (`PSOC-E84-AP`) from the lab's `wifi_connect.bat`, asks only for the broker password, then builds and programs the board. If something fails, run it again: finished steps are skipped. Serial output: Tera Term → Serial → KitProg3 USB-UART, Setup → Serial port → 115200, then RESET on the lab page.
+Add `-NoScreen` for the main without screen. At the end it reads the board's serial output and reports Wi-Fi, broker and clock as OK or MISSING (press RESET on the lab page when it asks); `-Check` does only that. The script reads the lab Wi-Fi (`PSOC-E84-AP`) from the lab's `wifi_connect.bat`, asks only for the broker password, then builds and programs the board. If something fails, run it again: finished steps are skipped. Serial output: Tera Term → Serial → KitProg3 USB-UART, Setup → Serial port → 115200, then RESET on the lab page.
 
 Before the slot ends: `Remove-Item ixmain\proj_cm33_ns\secrets.h, ixscreen\proj_cm33_ns\secrets.h` (see [Leaving the live lab](#leaving-the-live-lab)).
 
@@ -40,11 +40,12 @@ The steps below are what the script does, for doing it by hand.
 4. **Build + program.** The serial terminal shows:
    ```text
    main: listening on inhabitx/Z/#
-   main: running (client id inhabitx-main-Z), waiting for the time from a node message
+   main: running (client id inhabitx-main-Z)
+   sntp: time from pool.ntp.org
    main: clock set
    main: node Z.1.08: occupied
    ```
-5. **Check** on https://nadaabbas444.github.io/inhabitx/: the rooms follow the fake nodes, booking works, a 3rd booking with the same email → "limit". Unplug the board → "Building offline" on the page within about 1.5 minutes (the broker waits 1.5 × the 60 s keep-alive).
+5. **Check** on https://nadaabbas444.github.io/inhabitx/: the rooms follow the nodes, booking works, a 3rd booking with the same email → "limit". Unplug the board → "Building offline" on the page within about 1.5 minutes (the broker waits 1.5 × the 60 s keep-alive).
 
 ## with-screen
 
@@ -84,7 +85,7 @@ The E84 has two cores. Here the **CM55** runs the screen, the UI and the main; t
    DEFINES+=UI_HOR_RES=832 UI_VER_RES=480       # 4.3-inch (default)
    # DEFINES+=UI_HOR_RES=1024 UI_VER_RES=600    # 7-inch or 10.1-inch
    ```
-8. **Build + program.** Serial terminal: `main: screen 832x480 up, waiting for the Wi-Fi core`, then `relay: connected, passing messages to the screen core`, `main: broker connected`, `main: clock set`. The screen shows the same as `main_sim`; booking works on the screen and on the web page.
+8. **Build + program.** Serial terminal: `main: screen 832x480 up, waiting for the Wi-Fi core`, then `relay: connected, passing messages to the screen core`, `sntp: time from …`, `main: broker connected`, `main: clock set`. The screen shows the same as `main_sim`; booking works on the screen and on the web page.
 
 If text looks wrong or the screen stays black after step 6, switch the GPU drawing off in `lv_conf.h` (`#define LV_USE_DRAW_VG_LITE 0`): slower, but it rules out the graphics engine.
 
@@ -106,7 +107,7 @@ The lab's PC and board are used by the next person after you. Your code is publi
 | TLS / handshake error | our `mqtt_client_config.h` and `.c` really replaced Infineon's |
 | connection refused | broker password in `secrets.h` |
 | connected, but the laptop main keeps reconnecting | `main_sim` is still running: stop it |
-| bookings say "Pick a time today…" | no node message with a real time yet: start the fake nodes |
+| bookings say "The building's clock isn't set yet" | no `main: clock set` yet: look for `sntp: no answer` (NTP blocked), then give the time with a node message (fake nodes) |
 | rooms all offline | no node messages: start the fake nodes |
 | with-screen: `relay: screen core not answering` | `ix_ipc_cm33_init();` missing in `proj_cm33_ns/main.c`, or the screen core crashed (check its serial output) |
 | with-screen: build error about `UI_HOR_RES` | the Makefile size doesn't match the display (4.3-inch = 832 480) |

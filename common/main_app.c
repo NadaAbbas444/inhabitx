@@ -26,7 +26,8 @@ void main_app_set_time(time_t now)
     s_time_known = true;
 }
 
-/* "ts":1764237600 in a node message: a real time sets (or corrects) the clock. */
+/* "ts":1764237600 in a node message (or from SNTP on ".../_clock"): a real
+ * time sets (or corrects) the clock. */
 static void time_from_node(const char *p, size_t n)
 {
     static const char key[] = "\"ts\"";
@@ -83,6 +84,10 @@ void main_app_connected(void)
 void main_app_on_message(const char *topic, size_t tl, const char *payload, size_t pl, main_publish_fn publish)
 {
     if (tl > 6 && memcmp(topic + tl - 6, "/state", 6) == 0) time_from_node(payload, pl);
+    if (tl > 7 && memcmp(topic + tl - 7, "/_clock", 7) == 0) {     /* from the Wi-Fi core (SNTP) */
+        time_from_node(payload, pl);
+        return;
+    }
 
     if (!s_time_known && tl > 13 && memcmp(topic + tl - 13, "/bookings/new", 13) == 0) {
         /* without the real date and time every booking would be wrong */
@@ -96,9 +101,9 @@ void main_app_on_message(const char *topic, size_t tl, const char *payload, size
         if (req[0]) {
             char t[IX_MSG_TOPIC_LEN];
             snprintf(t, sizeof t, IX_TOPIC_ROOT "replies/%s", req);
-            publish(t, "{\"ok\":false,\"error\":\"time\"}", 28, false);
+            publish(t, "{\"ok\":false,\"error\":\"clock\"}", 29, false);
         }
-        printf("main: booking refused, clock not set yet (are the fake nodes running?)\n");
+        printf("main: booking refused, clock not set yet (no time from the internet or a node yet)\n");
         return;
     }
     ix_msg_result_t r;

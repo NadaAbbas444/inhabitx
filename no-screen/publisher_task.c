@@ -8,8 +8,9 @@
  *
  * Takes every incoming message from main_in_q and runs it through the main
  * (main_app.c: rooms, bookings, found items, replies), and twice a second
- * publishes the building state when it changed. Same behaviour as main_sim
- * on the laptop, without the screen.
+ * publishes the building state when it changed. The date and time come
+ * from the internet (ix_sntp.c). Same behaviour as main_sim on the laptop,
+ * without the screen.
  */
 #include "cybsp.h"
 #include "FreeRTOS.h"
@@ -23,12 +24,15 @@
 
 #include "main_board.h"
 #include "main_app.h"
+#include "ix_sntp.h"
 
 #include <stdio.h>
 #include <string.h>
 
 #define PUBLISHER_TASK_QUEUE_LENGTH     (3U)
 #define POLL_EVERY_MS                   (500U)
+#define SNTP_RETRY_MS                   (60U * 1000U)          /* until the first answer */
+#define SNTP_EVERY_MS                   (6U * 3600U * 1000U)   /* then a check every 6 h */
 
 TaskHandle_t publisher_task_handle;
 QueueHandle_t publisher_task_q;
@@ -72,10 +76,10 @@ void publisher_task(void *pvParameters)
     main_app_init();
     publisher_task_q = xQueueCreate(PUBLISHER_TASK_QUEUE_LENGTH, sizeof(publisher_data_t));
     main_app_connected();
-    printf("main: running (client id %s)%s\n", MQTT_CLIENT_IDENTIFIER,
-           main_app_time_known() ? "" : ", waiting for the time from a node message");
+    printf("main: running (client id %s)\n", MQTT_CLIENT_IDENTIFIER);
 
     TickType_t next_poll = xTaskGetTickCount();
+    TickType_t next_sntp = xTaskGetTickCount();
     while (true)
     {
         while (pdTRUE == xQueueReceive(publisher_task_q, &cmd, 0))
@@ -89,6 +93,17 @@ void publisher_task(void *pvParameters)
             {
                 s_connected = false;
             }
+        }
+
+        /* the date and time from the internet (nodes may send "ts":0) */
+        if (s_connected && (int32_t)(xTaskGetTickCount() - next_sntp) >= 0)
+        {
+            time_t t = ix_sntp_get();
+            if (t)
+            {
+                main_app_set_time(t);
+            }
+            next_sntp = xTaskGetTickCount() + pdMS_TO_TICKS(t ? SNTP_EVERY_MS : SNTP_RETRY_MS);
         }
 
         TickType_t now = xTaskGetTickCount();
