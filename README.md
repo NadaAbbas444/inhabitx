@@ -1,34 +1,52 @@
 # InhabitX main on the PSOC™ Edge E84
 
-The main (bookings, ghost release, lost & found, answering the web page) running on the E84 instead of the laptop. Same behaviour as `main_sim`.
+The main (bookings, ghost release, lost & found, answering the web page) running on the E84 instead of the laptop. Same behaviour as `main_sim`, with its touch screen UI on the board's 4.3-inch display.
 
-| Folder | What | Use it when |
-|---|---|---|
-| `no-screen/` | the main on the Wi-Fi core, no display | the board has internet but no screen (or you want the safe first step) |
-| `with-screen/` | the main with its touch screen UI (4.3-inch 832×480, or 7-inch / 10.1-inch 1024×600) | the board has internet **and** a display |
-| `common/` | the main's logic, used by both | always |
+## In the Infineon Live Lab: what to run
 
-## Before you start
+Each slot can be a fresh lab PC, so plan about 20 minutes (downloads + first build).
+
+1. **Before:** make sure no `main_sim` is running anywhere (only one main at a time). Open the lab in **one browser tab only**: a second login ends the session.
+2. **Plug in**, open the Development Environment (the lab PC), start **Visual Studio Code**, then **Terminal → New Terminal**.
+3. **Run** (type it in three short lines, long lines get garbled over the remote link):
+   ```powershell
+   cd ~\Documents
+   iwr https://raw.githubusercontent.com/NadaAbbas444/inhabitx/main-board-infineon/lab.ps1 -OutFile lab.ps1
+   powershell -ExecutionPolicy Bypass -File lab.ps1
+   ```
+4. **Type the broker password** when it asks (`broker password (HiveMQ login "devices")`). The lab Wi-Fi (`PSOC-E84-AP`) is read from the lab's own `wifi_connect.bat`.
+5. **Wait.** It downloads our code and Infineon's two examples, builds and programs the board. If it stops with an error, run the last line again: finished steps are skipped.
+6. **When it says "press RESET"**: Input Panel (left) → Board Controls → **RESET**. It then reads the board for up to 2½ minutes and ends with:
+   ```text
+     OK      wifi
+     OK      broker
+     OK      clock
+   ```
+   A `MISSING` line comes with a hint. To look again later without building: `powershell -ExecutionPolicy Bypass -File lab.ps1 -Check`.
+7. **Check:** the UI shows on the board's screen (**EVK Display Livestream** in the lab page). Book a room on https://nadaabbas444.github.io/inhabitx/: it appears on the board's screen and in the serial output.
+8. **Before the slot ends**, remove everything that holds the password (`secrets.h` and the built firmware):
+   ```powershell
+   cd ~\Documents; Remove-Item ixmain, ixscreen, ix, lab.ps1 -Recurse -Force
+   ```
+
+Without screen (first test, or if the screen version fails): `powershell -ExecutionPolicy Bypass -File lab.ps1 -NoScreen`.
+
+## What's in this branch
+
+| Folder / file | What |
+|---|---|
+| `lab.ps1` | the one command above |
+| `with-screen/` | the main with its touch screen UI (4.3-inch 832×480, or 7-inch / 10.1-inch 1024×600); `setup_lab.ps1` puts it into Infineon's examples |
+| `no-screen/` | the main on the Wi-Fi core, no display |
+| `common/` | the main's logic, used by both |
+
+## Before you start (any setup)
 
 - **Only one main at a time.** Stop `main_sim` on the laptop while the board is the main: both log in as `inhabitx-main-Z` and would keep kicking each other off.
 - **The time** comes from the internet (SNTP, UDP port 123) once the board is on Wi-Fi; until then bookings are refused with `clock` ("The building's clock isn't set yet" on the page). If the network blocks NTP, a node message with a real `"ts"` sets it too (e.g. the fake nodes: `.venv/bin/python tools/fake_nodes.py --room Z.1.12` on `main`).
-- **Wi-Fi:** the board needs a network with internet. In a live lab, ask the staff for one and whether port 8883 is open.
+- **Wi-Fi:** the board needs a network with internet and port 8883 open (the Live Lab's `PSOC-E84-AP` has both).
 
-## Infineon Live Lab: one command
-
-Each slot can be a fresh lab PC, so everything is downloaded again (about 20 minutes in total). Open the lab in **one browser tab only**: a second login ends the session. In VS Code on the lab PC, Terminal:
-
-```powershell
-cd ~\Documents
-iwr https://raw.githubusercontent.com/NadaAbbas444/inhabitx/main-board-infineon/lab.ps1 -OutFile lab.ps1
-powershell -ExecutionPolicy Bypass -File lab.ps1
-```
-
-Add `-NoScreen` for the main without screen. At the end it reads the board's serial output and reports Wi-Fi, broker and clock as OK or MISSING (press RESET on the lab page when it asks); `-Check` does only that. The script reads the lab Wi-Fi (`PSOC-E84-AP`) from the lab's `wifi_connect.bat`, asks only for the broker password, then builds and programs the board. If something fails, run it again: finished steps are skipped. Serial output: Tera Term → Serial → KitProg3 USB-UART, Setup → Serial port → 115200, then RESET on the lab page.
-
-Before the slot ends: `Remove-Item ixmain\proj_cm33_ns\secrets.h, ixscreen\proj_cm33_ns\secrets.h` (see [Leaving the live lab](#leaving-the-live-lab)).
-
-The steps below are what the script does, for doing it by hand.
+The steps below are what `lab.ps1` does, for doing it by hand (e.g. on your own board).
 
 ## no-screen
 
