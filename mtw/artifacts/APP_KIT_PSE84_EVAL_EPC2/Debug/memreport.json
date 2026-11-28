@@ -1,0 +1,673 @@
+{
+    "memoryUsage": [
+        {
+            "name": "CM55_DTCM_INTERNAL",
+            "regions": [
+                {
+                    "name": "m55_data",
+                    "offset": "0x00000000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".data",
+                            "offset": "0x00000000",
+                            "project": "proj_cm55",
+                            "size": "0x00000244",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x20000000"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".noinit",
+                            "offset": "0x00000248",
+                            "project": "proj_cm55",
+                            "size": "0x00000098",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x20000248"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".bss",
+                            "offset": "0x000002e0",
+                            "project": "proj_cm55",
+                            "size": "0x00005e3c",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x200002e0"
+                        }
+                    ],
+                    "size": "0x00040000"
+                }
+            ],
+            "size": "0x00040000",
+            "start": [
+                "0x20000000",
+                "0x48040000",
+                "0x58040000"
+            ]
+        },
+        {
+            "name": "CM55_ITCM_INTERNAL",
+            "regions": [
+                {
+                    "name": "m55_code",
+                    "offset": "0x00000000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".app_code_itcm",
+                            "offset": "0x00000000",
+                            "project": "proj_cm55",
+                            "size": "0x00001398",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x00000000"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".ram_vectors",
+                            "offset": "0x00001400",
+                            "project": "proj_cm55",
+                            "size": "0x000002f8",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x00001400"
+                        }
+                    ],
+                    "size": "0x00040000"
+                }
+            ],
+            "size": "0x00040000",
+            "start": [
+                "0x00000000",
+                "0x48000000",
+                "0x58000000"
+            ]
+        },
+        {
+            "name": "RRAM",
+            "regions": [
+                {
+                    "name": "extended_boot_reserved",
+                    "offset": "0x00000000",
+                    "sections": [
+                    ],
+                    "size": "0x00011000"
+                },
+                {
+                    "name": "user_programmable",
+                    "offset": "0x00011000",
+                    "sections": [
+                    ],
+                    "size": "0x0004a000"
+                },
+                {
+                    "name": "user_nvm",
+                    "offset": "0x0005b000",
+                    "sections": [
+                    ],
+                    "size": "0x00008000"
+                },
+                {
+                    "name": "reserved_region",
+                    "offset": "0x0006a000",
+                    "sections": [
+                    ],
+                    "size": "0x00016000"
+                }
+            ],
+            "size": "0x00080000",
+            "start": [
+                "0x02000000",
+                "0x12000000",
+                "0x22000000",
+                "0x32000000"
+            ]
+        },
+        {
+            "name": "SMIF0MEM1",
+            "regions": [
+                {
+                    "name": "m33s_nvm",
+                    "offset": "0x00100000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".mcu_boot_header",
+                            "offset": "0x00000000",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000400",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x18100000"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".vector_table",
+                            "offset": "0x00000400",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000404",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x18100400"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".gnu.sgstubs",
+                            "offset": "0x00000820",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000020",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x18100820"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".app_code_main",
+                            "offset": "0x00000c00",
+                            "project": "proj_cm33_s",
+                            "size": "0x00006530",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x18100c00"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".ARM.exidx",
+                            "offset": "0x00007130",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000008",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x18107130"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".copy.table",
+                            "offset": "0x00007138",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000018",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x18107138"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".zero.table",
+                            "offset": "0x00007150",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000008",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x18107150"
+                        },
+                        {
+                            "isVma": false,
+                            "name": ".data",
+                            "offset": "0x00007158",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000120",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x18107158"
+                        },
+                        {
+                            "isVma": false,
+                            "name": ".app_code_ram",
+                            "offset": "0x00007278",
+                            "project": "proj_cm33_s",
+                            "size": "0x000005c0",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x18107278"
+                        }
+                    ],
+                    "size": "0x00200000"
+                },
+                {
+                    "name": "m33s_trailer",
+                    "offset": "0x00300000",
+                    "sections": [
+                    ],
+                    "size": "0x00040000"
+                },
+                {
+                    "name": "m33_nvm",
+                    "offset": "0x00340000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".mcu_boot_header",
+                            "offset": "0x00000000",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000400",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x08340000"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".app_code_main",
+                            "offset": "0x00000400",
+                            "project": "proj_cm33_ns",
+                            "size": "0x000489c8",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x08340400"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".ARM.exidx",
+                            "offset": "0x00048dc8",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000008",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x08388dc8"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".copy.table",
+                            "offset": "0x00048dd0",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000018",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x08388dd0"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".zero.table",
+                            "offset": "0x00048de8",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000008",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x08388de8"
+                        },
+                        {
+                            "isVma": false,
+                            "name": ".app_code_ram",
+                            "offset": "0x00048df0",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000310",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x08388df0"
+                        },
+                        {
+                            "isVma": false,
+                            "name": ".data",
+                            "offset": "0x00049100",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000068",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x08389100"
+                        }
+                    ],
+                    "size": "0x00200000"
+                },
+                {
+                    "name": "m33_trailer",
+                    "offset": "0x00540000",
+                    "sections": [
+                    ],
+                    "size": "0x00040000"
+                },
+                {
+                    "name": "m55_nvm",
+                    "offset": "0x00580000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".mcu_boot_header",
+                            "offset": "0x00000000",
+                            "project": "proj_cm55",
+                            "size": "0x00000400",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x60580000"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".app_code_main",
+                            "offset": "0x00000400",
+                            "project": "proj_cm55",
+                            "size": "0x00050cc0",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x60580400"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".ARM.exidx",
+                            "offset": "0x000510c0",
+                            "project": "proj_cm55",
+                            "size": "0x00000008",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x605d10c0"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".copy.table",
+                            "offset": "0x000510c8",
+                            "project": "proj_cm55",
+                            "size": "0x00000030",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x605d10c8"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".zero.table",
+                            "offset": "0x000510f8",
+                            "project": "proj_cm55",
+                            "size": "0x00000008",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x605d10f8"
+                        },
+                        {
+                            "isVma": false,
+                            "name": ".app_code_itcm",
+                            "offset": "0x00051100",
+                            "project": "proj_cm55",
+                            "size": "0x00001398",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x605d1100"
+                        },
+                        {
+                            "isVma": false,
+                            "name": ".data",
+                            "offset": "0x00052498",
+                            "project": "proj_cm55",
+                            "size": "0x00000244",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x605d2498"
+                        },
+                        {
+                            "isVma": false,
+                            "name": ".cy_socmem_data",
+                            "offset": "0x000526dc",
+                            "project": "proj_cm55",
+                            "size": "0x00023b78",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x605d26dc"
+                        }
+                    ],
+                    "size": "0x002c0000"
+                },
+                {
+                    "name": "m55_trailer",
+                    "offset": "0x00840000",
+                    "sections": [
+                    ],
+                    "size": "0x00040000"
+                }
+            ],
+            "size": "0x01000000",
+            "start": [
+                "0x08000000",
+                "0x18000000",
+                "0x60000000",
+                "0x70000000"
+            ]
+        },
+        {
+            "name": "SOCMEM_RAM",
+            "regions": [
+                {
+                    "name": "m55_code_secondary",
+                    "offset": "0x00000000",
+                    "sections": [
+                    ],
+                    "size": "0x00040000"
+                },
+                {
+                    "name": "m55_data_secondary",
+                    "offset": "0x00040000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".cy_socmem_data",
+                            "offset": "0x00000000",
+                            "project": "proj_cm55",
+                            "size": "0x00023b78",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x26040000"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".heap",
+                            "offset": "0x00023b78",
+                            "project": "proj_cm55",
+                            "size": "0x00298488",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x26063b78"
+                        }
+                    ],
+                    "size": "0x002bc000"
+                },
+                {
+                    "name": "m33_m55_shared",
+                    "offset": "0x002fc000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".reserved_socmem",
+                            "offset": "0x00000000",
+                            "project": "proj_cm55",
+                            "size": "0x00040000",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x262fc000"
+                        }
+                    ],
+                    "size": "0x00040000"
+                },
+                {
+                    "name": "gfx_mem",
+                    "offset": "0x0033c000",
+                    "sections": [
+                    ],
+                    "size": "0x001c4000"
+                }
+            ],
+            "size": "0x00500000",
+            "start": [
+                "0x06000000",
+                "0x16000000",
+                "0x26000000",
+                "0x36000000"
+            ]
+        },
+        {
+            "name": "SRAM",
+            "regions": [
+                {
+                    "name": "extended_boot_sram_reserved",
+                    "offset": "0x00000000",
+                    "sections": [
+                    ],
+                    "size": "0x00001000"
+                },
+                {
+                    "name": "m33s_shared",
+                    "offset": "0x00001000",
+                    "sections": [
+                    ],
+                    "size": "0x00001000"
+                },
+                {
+                    "name": "m33s_code",
+                    "offset": "0x00002000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".app_code_ram",
+                            "offset": "0x00000000",
+                            "project": "proj_cm33_s",
+                            "size": "0x000005c0",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x14002000"
+                        }
+                    ],
+                    "size": "0x00035000"
+                },
+                {
+                    "name": "m33s_data",
+                    "offset": "0x00037000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".ram_vectors",
+                            "offset": "0x00000000",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000354",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x34037000"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".data",
+                            "offset": "0x00000354",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000120",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x34037354"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".bss",
+                            "offset": "0x00000474",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000078",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x34037474"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".noinit",
+                            "offset": "0x000004ec",
+                            "project": "proj_cm33_s",
+                            "size": "0x00000095",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x340374ec"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".heap",
+                            "offset": "0x00000588",
+                            "project": "proj_cm33_s",
+                            "size": "0x00020278",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x34037588"
+                        }
+                    ],
+                    "size": "0x00021000"
+                },
+                {
+                    "name": "m33_code",
+                    "offset": "0x00058000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".app_code_ram",
+                            "offset": "0x00000000",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000310",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x04058000"
+                        }
+                    ],
+                    "size": "0x00065000"
+                },
+                {
+                    "name": "m33_data",
+                    "offset": "0x000bd000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".ram_vectors",
+                            "offset": "0x00000000",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000354",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x240bd000"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".data",
+                            "offset": "0x00000354",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000068",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x240bd354"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".bss",
+                            "offset": "0x000003bc",
+                            "project": "proj_cm33_ns",
+                            "size": "0x000015a0",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x240bd3bc"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".noinit",
+                            "offset": "0x0000195c",
+                            "project": "proj_cm33_ns",
+                            "size": "0x00000095",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x240be95c"
+                        },
+                        {
+                            "isVma": true,
+                            "name": ".heap",
+                            "offset": "0x000019f8",
+                            "project": "proj_cm33_ns",
+                            "size": "0x0003d608",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x240be9f8"
+                        }
+                    ],
+                    "size": "0x00040000"
+                },
+                {
+                    "name": "m33s_allocatable_shared",
+                    "offset": "0x000fd000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".cy_sharedmem",
+                            "offset": "0x00000000",
+                            "project": "proj_cm33_s",
+                            "size": "0x0000017c",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_s.elf",
+                            "start": "0x340fd000"
+                        }
+                    ],
+                    "size": "0x00001000"
+                },
+                {
+                    "name": "m33_allocatable_shared",
+                    "offset": "0x000fe000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".cy_sharedmem",
+                            "offset": "0x00000000",
+                            "project": "proj_cm33_ns",
+                            "size": "0x000003bc",
+                            "sourceElfFile": "../build/project_hex/proj_cm33_ns.elf",
+                            "start": "0x240fe000"
+                        }
+                    ],
+                    "size": "0x00001000"
+                },
+                {
+                    "name": "m55_allocatable_shared",
+                    "offset": "0x000ff000",
+                    "sections": [
+                        {
+                            "isVma": true,
+                            "name": ".cy_sharedmem",
+                            "offset": "0x00000000",
+                            "project": "proj_cm55",
+                            "size": "0x0000024c",
+                            "sourceElfFile": "../build/project_hex/proj_cm55.elf",
+                            "start": "0x240ff000"
+                        }
+                    ],
+                    "size": "0x00001000"
+                }
+            ],
+            "size": "0x00100000",
+            "start": [
+                "0x04000000",
+                "0x14000000",
+                "0x24000000",
+                "0x34000000"
+            ]
+        }
+    ],
+    "version": 1
+}
