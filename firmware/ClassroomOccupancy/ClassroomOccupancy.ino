@@ -1,6 +1,6 @@
 /* Waveshare ESP32-S3-AUDIO-Board + DEEPCRAFT streaming export.
  * Arduino-ESP32 3.3.12. See README.txt before uploading.
- * No display, SD, speaker, ESP-SR or external wiring required.
+ * No display, SD, speaker or external wiring required. Voice needs ESP SR 16M partition.
  */
 #include <Arduino.h>
 #include <math.h>
@@ -34,13 +34,14 @@ struct Result {
     float p[3];
     float rms[4];
     float clipFraction;
-    uint32_t modelUs, queueDepth, capturedMs;
+    uint32_t modelUs, queueDepth, capturedMs, epoch;
     RoomState state;
 };
 static QueueHandle_t audioQueue, resultQueue;
 static i2s_chan_handle_t rxChannel;
 static es7210_dev_handle_t adc;
 static volatile uint32_t streamEpoch = 0, droppedBlocks = 0, dmaOverflows = 0, readErrors = 0;
+#include "VoiceRecognizer.h"
 #include "InhabitXNetwork.h"
 
 static void must(esp_err_t error, const char* operation) {
@@ -142,6 +143,10 @@ static void captureTask(void*) {
         }
         for (unsigned ch = 0; ch < TDM_SLOTS; ++ch) block.rms[ch] = sqrt(energy[ch] / block.frames);
         block.clipFraction = (float)clipped / block.frames;
+        if (voiceRunning && !__atomic_load_n(&voiceFault, __ATOMIC_RELAXED) &&
+            xQueueSend(voiceAudioQueue, &block, 0) != pdTRUE) {
+            __atomic_store_n(&voiceFault, 1, __ATOMIC_RELAXED);
+        }
         if (xQueueSend(audioQueue, &block, 0) != pdTRUE) {
             __atomic_add_fetch(&droppedBlocks, 1, __ATOMIC_RELAXED);
             __atomic_add_fetch(&streamEpoch, 1, __ATOMIC_RELAXED);
@@ -188,9 +193,8 @@ static void inferenceTask(void*) {
                 if (worstBlockUs > result.modelUs) result.modelUs = worstBlockUs;
                 result.queueDepth = uxQueueMessagesWaiting(audioQueue);
                 result.capturedMs = block.capturedMs; result.state = occupancy.state;
+                result.epoch = block.epoch;
                 xQueueOverwrite(resultQueue, &result);
-                const NodeSnapshot snapshot = {result.state, block.capturedMs, block.epoch};
-                xQueueOverwrite(nodeQueue, &snapshot);
                 worstBlockUs = 0;
             }
         }
@@ -213,6 +217,7 @@ void setup() {
     nodeQueue = xQueueCreate(1, sizeof(NodeSnapshot));
     if (!audioQueue || !resultQueue || !nodeQueue) must(ESP_ERR_NO_MEM, "queues");
     initMicrophone();
+    initVoiceRecognition();
     if (xTaskCreatePinnedToCore(captureTask, "mic-capture", 8192, nullptr, 5, nullptr, 0) != pdPASS)
         must(ESP_ERR_NO_MEM, "capture task");
     if (xTaskCreatePinnedToCore(inferenceTask, "model", 16384, nullptr, 3, nullptr, 1) != pdPASS)
@@ -226,6 +231,9 @@ void loop() {
     static Result latest = {};
     static bool haveResult = false, havePrinted = false;
     static RoomState printedState = RoomState::Unknown;
+    static VoicePolicy voicePolicy;
+    static bool wasListening = false, wasManual = false, voiceFaultPrinted = false;
+    static uint32_t policyEpoch = 0;
     static uint32_t printedDrops = 0, printedOverflows = 0, printedErrors = 0;
     Result result;
     if (xQueueReceive(resultQueue, &result, pdMS_TO_TICKS(100)) == pdTRUE) {
@@ -244,13 +252,42 @@ void loop() {
                       (unsigned long)__atomic_load_n(&readErrors, __ATOMIC_RELAXED));
     }
     const uint32_t now = millis();
-    const bool fresh = haveResult && uint32_t(now - latest.capturedMs) <= 2000;
-    const RoomState state = fresh ? latest.state : RoomState::Unknown;
+    const uint32_t currentEpoch = __atomic_load_n(&streamEpoch, __ATOMIC_RELAXED);
+    if (policyEpoch != currentEpoch || __atomic_load_n(&voiceFault, __ATOMIC_RELAXED)) {
+        voicePolicy.cancelListening();
+        policyEpoch = currentEpoch;
+    }
+    if (voiceRunning && __atomic_load_n(&voiceFault, __ATOMIC_RELAXED) && !voiceFaultPrinted) {
+        Serial.println("Voice: audio gap detected; voice disabled until reboot. Automatic sensing continues.");
+        voiceFaultPrinted = true;
+    }
+    VoiceEvent event;
+    while (voiceEventQueue && xQueueReceive(voiceEventQueue, &event, 0) == pdTRUE) {
+        if (__atomic_load_n(&voiceFault, __ATOMIC_RELAXED) || event.epoch != currentEpoch ||
+            uint32_t(now - event.capturedMs) > VOICE_AUDIO_MAX_AGE_MS) continue;
+        if (voicePolicy.command(event.command, now)) {
+            Serial.println(event.command == VoiceCommand::Arrive ?
+                "Voice: room occupied confirmed by user" : "Voice: room marked empty for 10 minutes");
+        } else if (event.command == VoiceCommand::Wake) {
+            Serial.println("Voice: listening (8 seconds)...");
+        }
+    }
+    const bool listening = voicePolicy.listening(now);
+    if (wasListening && !listening && !voicePolicy.active(now)) Serial.println("Voice: command window closed");
+    wasListening = listening;
+    const bool manual = voicePolicy.active(now);
+    if (wasManual && !manual) Serial.println("Voice: override expired; automatic detection resumed");
+    wasManual = manual;
+    const bool fresh = haveResult && latest.epoch == currentEpoch && uint32_t(now - latest.capturedMs) <= 2000;
+    const RoomState state = fresh ? voicePolicy.state(latest.state, now) : RoomState::Unknown;
+    const NodeSnapshot snapshot = {state, latest.capturedMs, latest.epoch, manual, manual ? voicePolicy.eventId() : 0};
+    xQueueOverwrite(nodeQueue, &snapshot);
     if (!havePrinted || state != printedState || uint32_t(now - lastReport) >= SERIAL_STATUS_EVERY_MS) {
         const char* label = state == RoomState::Occupied ? "OCCUPIED" :
-                            state == RoomState::Unoccupied ? "EMPTY (inferred)" : "UNKNOWN";
+                            state == RoomState::Unoccupied ? (manual ? "EMPTY" : "EMPTY (inferred)") : "UNKNOWN";
         if (fresh) {
-            Serial.printf("Room: %s | activity %.0f%% | mic %.0f dBFS\n", label,
+            Serial.printf("Room: %s%s | activity %.0f%% | mic %.0f dBFS\n", label,
+                          manual ? " (voice override)" : "",
                           latest.p[2] * 100.0f,
                           20.0f * log10f(fmaxf(latest.rms[MIC_SLOT], 1e-9f)));
         } else {

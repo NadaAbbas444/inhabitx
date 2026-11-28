@@ -38,6 +38,7 @@ static void networkTask(void*) {
     uint32_t lastNtpTry = 0;
     bool wifiWasConnected = false, clockReady = false, ntpWarningPrinted = false;
     bool hadValidState = false;
+    uint32_t lastConfirmationId = 0;
     for (;;) {
         uint32_t now = millis();
         if (WiFi.status() != WL_CONNECTED) {
@@ -109,12 +110,16 @@ static void networkTask(void*) {
         if (!valid) {
             if (hadValidState) Serial.println("MQTT: paused (occupancy unknown)");
             hadValidState = false;
-        } else if (!hadValidState || uint32_t(now - lastSend) >= NODE_SEND_EVERY_MS) {
-            char payload[128];
-            const size_t length = nodeMessage(NODE_ROOM, snapshot.state, payload, sizeof payload);
+        } else if (!hadValidState || snapshot.confirmationId != lastConfirmationId || uint32_t(now - lastSend) >= NODE_SEND_EVERY_MS) {
+            char payload[256];
+            const size_t length = nodeMessage(NODE_ROOM, snapshot.state, payload, sizeof payload, snapshot.userConfirmed);
             if (length && mqtt.publish(NODE_TOPIC, reinterpret_cast<const uint8_t*>(payload), length, false)) {
                 lastSend = millis();
                 hadValidState = true;
+                if (snapshot.userConfirmed && snapshot.confirmationId != lastConfirmationId)
+                    Serial.println(snapshot.state == RoomState::Occupied ?
+                        "MQTT: sent user-confirmed OCCUPIED" : "MQTT: sent user-declared EMPTY");
+                lastConfirmationId = snapshot.confirmationId;
                 if (SERIAL_VERBOSE) Serial.printf("node: %s -> %s\n", NODE_TOPIC, payload);
             } else {
                 // Force a new broker connection even if Wi-Fi is still up.

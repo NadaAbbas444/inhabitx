@@ -17,11 +17,31 @@
     "unknown_stale_or_invalid_epoch_policy": "suppress publish; main marks offline after 10 seconds",
     "existing_occupancy_filter_unchanged": true,
     "host_contract_tests_passed": true,
-    "host_test_cases": ["occupied JSON", "unoccupied JSON", "unknown suppression", "truncation", "freshness boundary", "epoch mismatch", "millis rollover"],
+    "host_test_cases": [
+      "occupied JSON",
+      "unoccupied JSON",
+      "unknown suppression",
+      "truncation",
+      "freshness boundary",
+      "epoch mismatch",
+      "millis rollover"
+    ],
     "target_compile_attempted": true,
     "target_compile_passed": false,
     "target_compile_blocker": "Windows Illegal System DLL Relocation before compiler launch",
     "live_broker_tested": false,
+    "hardware_tested": false
+  },
+  "voice_control": {
+    "implementation": "experimental offline MultiNet activation phrase and commands",
+    "wake_phrase": "Hey Infineon",
+    "command_window_ms": 8000,
+    "arrival_override_ms": 120000,
+    "departure_override_ms": 600000,
+    "required_partition": "esp_sr_16",
+    "host_policy_tests_passed": true,
+    "target_compile_passed": false,
+    "target_compile_blocker": "Windows Illegal System DLL Relocation before compiler launch",
     "hardware_tested": false
   }
 }

@@ -61,10 +61,11 @@ Flash Size: 16MB
 PSRAM: OPI PSRAM
 USB Mode: Hardware CDC and JTAG
 USB CDC On Boot: Enabled
-Partition Scheme: a 16MB scheme with at least a 3MB application partition.
+Partition Scheme: ESP SR 16M (3MB APP/6MB SPIFFS/3.9MB MODEL).
 Use normal USB upload, then Serial Monitor at 115200 baud.
 Do not select the Arduino Nano ESP32 board or an ESP32-C3 board.
-No ESP-SR model partition is needed: this uses the supplied DEEPCRAFT model.
+Voice requires the ESP-SR model partition and bundled English model image.
+Selecting ESP SR 16M makes Arduino copy/flash srmodels.bin automatically.
 build_opt.h supplies -O3 for the generated inference code.
 
 HARDWARE
@@ -122,6 +123,59 @@ block time, queue depth, dropped blocks, DMA overflows and read errors.
 The processing time includes generated neural-network inference during that block.
 Capture runs separately on core 0; the single stateful model runs on core 1.
 Buffer is about 0.5 sec; increasing it cannot fix sustained slow inference.
+
+VOICE COMMANDS (EXPERIMENTAL, OFFLINE)
+Say "Hey Infineon", pause for the "Voice: listening" serial notice, then within
+8 seconds say one of:
+  "I am in the room"       -> user-confirmed occupied; override lasts 2 minutes.
+  "I am leaving the room" -> user-declared empty; override lasts 10 minutes.
+After a command, say the activation phrase again for another command. An
+arrival command cancels a departure override immediately. After expiry,
+the continuously running automatic occupancy filter resumes control.
+VoicePolicy.h holds these durations. VoiceRecognizer.h has VOICE_ENABLED.
+
+Recognition uses the Arduino-ESP32 ESP_SR library with its stock English
+MultiNet model. "Hey Infineon" is registered as a custom command to gate
+the two room commands. This is not a purpose-trained WakeNet wake-word
+model; continuous command recognition has different CPU/power/false-trigger
+characteristics, and brand pronunciation needs testing. No cloud service
+or audio upload is used. Recognition is fixed-phrase, not open dictation.
+
+Select ESP SR 16M and OPI PSRAM before uploading. No extra wiring is needed.
+Only captureTask reads I2S; it fans out the selected mono PCM to a separate
+speech queue. ESP_SR handles the audio front end and command model. Model
+and speech inference run concurrently and need load/memory testing on board.
+If the speech queue/audio stream has a gap, voice commands are disabled
+until reboot and automatic detection continues; this avoids trusting a
+partially lost command. A missing speech model/partition disables voice
+with a serial explanation. The existing DEEPCRAFT files are unchanged.
+
+Voice-confirmed publishes retain the normal room/occupied/ts fields and add:
+  "source":"voice","message":"Room occupied confirmed by user"
+or:
+  "source":"voice","message":"Room marked empty by user"
+These fields are sent on the same /state topic, not a new subscription.
+The current main ignores extra fields: it updates occupancy, but displaying
+the confirmation text on the dashboard requires a separate main/UI change.
+"MQTT: sent user-confirmed OCCUPIED" / "sent user-declared EMPTY" means
+the node's MQTT publish call succeeded, not an application-level acknowledgement.
+Unknown/stale/faulted automatic audio still pauses publishing, including
+during a voice override; no old audio result is refreshed just to keep online.
+
+TESTING VOICE
+1. Verify/upload with ESP SR 16M; expect "Voice: ready".
+2. Say a room command without "Hey Infineon": no manual override.
+3. Say "Hey Infineon", pause, then "I am in the room": occupied confirmation.
+4. Repeat wake + leaving: empty override; sound must not undo it for 10 minutes.
+5. Repeat wake + arrival before expiry: occupied immediately.
+6. Wake, wait over 8 seconds, then command: no override.
+7. Check CPU load, no growing capture warnings, accent/brand pronunciation,
+   background conversation and played audio. Audio from a recording can
+   trigger recognition; the system does not authenticate a speaker.
+Host policy/JSON tests pass. ESP32 compilation is still blocked in this
+environment by Windows Illegal System DLL Relocation before compiler launch;
+speech recognition quality and simultaneous inference are not hardware-verified.
+Reference: https://docs.espressif.com/projects/esp-sr/en/latest/esp32s3/speech_command_recognition/README.html
 
 FIRST TEST
 1. Open the sketch with the settings above, Verify, then upload.
